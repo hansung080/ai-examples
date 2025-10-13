@@ -20,14 +20,14 @@ GPT_MODEL=gpt-4o-mini
 
 ## Usage
 ### Run General Application
-To run a general application, run the following command on the system environment.
+To run a general application, run the following commands on the system environment.
 ```sh
 $ cd <python-file-directory> 
 $ ./<python-file> [arguments]
 ```
 
 ### Run Streamlit Application
-To run a Streamlit application, run the following command on the virtual environment. 
+To run a Streamlit application, run the following commands on the virtual environment. 
 ```sh
 $ source .venv/bin/activate
 (.venv) $ streamlit run <python-file> [arguments]
