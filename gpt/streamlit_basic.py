@@ -1,7 +1,8 @@
-import streamlit as st
-from openai import OpenAI
-from dotenv import load_dotenv
 import os
+
+import streamlit as st
+from dotenv import load_dotenv
+from openai import OpenAI
 
 load_dotenv()
 
@@ -29,7 +30,6 @@ if prompt := st.chat_input():
     if not openai_api_key:
         st.info("Please add your OpenAI API key to continue.")
         st.stop()
-
     client = OpenAI(api_key=openai_api_key)
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)

@@ -1,8 +1,8 @@
-#! ../.venv/bin/python3
-
-from openai import OpenAI
-from dotenv import load_dotenv
+#!../.venv/bin/python3
 import os
+
+from dotenv import load_dotenv
+from openai import OpenAI
 
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
@@ -11,11 +11,11 @@ model = os.getenv("GPT_MODEL")
 client = OpenAI(api_key=api_key)
 
 
-def get_ai_response(messages):
+def get_ai_response(msgs):
     response = client.chat.completions.create(
         model=model,
         temperature=0.9,
-        messages=messages,
+        messages=msgs,
     )
     return response.choices[0].message.content
 
@@ -28,7 +28,6 @@ while True:
     user_input = input("User> ")
     if user_input == "exit":
         break
-
     messages.append({"role": "user", "content": user_input})
     ai_response = get_ai_response(messages)
     messages.append({"role": "assistant", "content": ai_response})

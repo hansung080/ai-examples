@@ -1,8 +1,8 @@
-#! ../.venv/bin/python3
-
-from openai import OpenAI
-from dotenv import load_dotenv
+#!../.venv/bin/python3
 import os
+
+from dotenv import load_dotenv
+from openai import OpenAI
 
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
@@ -14,7 +14,6 @@ while True:
     user_input = input("User> ")
     if user_input == "exit":
         break
-
     response = client.chat.completions.create(
         model=model,
         temperature=0.9,
