@@ -1,5 +1,5 @@
-# AI Agents
-Various AI agents
+# AI Examples
+Various AI code examples
 
 ## Runtime Environment
 ### Create Virtual Environment
