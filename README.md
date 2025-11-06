@@ -19,8 +19,8 @@ GPT_MODEL=gpt-4o-mini
 ```
 
 ## Usage
-### Run General Application
-To run a general application, run the following commands on the system environment.
+### Run Standalone Application
+To run a standalone application, run the following commands on the system environment.
 ```sh
 $ cd <python-file-directory> 
 $ ./<python-file> [arguments]
@@ -33,5 +33,6 @@ $ source .venv/bin/activate
 (.venv) $ streamlit run <python-file> [arguments]
 ```
 
-## Agents
-- gpt: gpt_basic, one_shot, few_shot, single_turn, multi_turn, streamlit_basic 
+## AI Examples
+- Do it! AI Agent Development with LLM (aadl)
+  - gpt_basic, one_shot, few_shot, single_turn, multi_turn, streamlit_basic
