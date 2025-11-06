@@ -5,7 +5,7 @@ Various AI code examples
 ### Create Virtual Environment
 To create a virtual environment and install dependent packages, run the following commands in the project root directory.
 ```sh
-$ python3.12 -m venv .venv
+$ python3.13 -m venv .venv
 $ source .venv/bin/activate
 (.venv) $ pip3 install -r requirements.txt
 (.venv) $ deactivate
@@ -36,3 +36,5 @@ $ source .venv/bin/activate
 ## AI Examples
 - Do it! AI Agent Development with LLM (aadl)
   - gpt_basic, one_shot, few_shot, single_turn, multi_turn, streamlit_basic
+- Essential Math for Data Science (emds)
+  - nn_for_bin_class 
