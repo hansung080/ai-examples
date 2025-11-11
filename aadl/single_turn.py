@@ -1,21 +1,22 @@
 #!../.venv/bin/python3
-import os
+from __future__ import annotations
 
-from dotenv import load_dotenv
 from openai import OpenAI
+from openai.types.chat import ChatCompletion
 
-load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
-model = os.getenv("GPT_MODEL")
+from env import GPT_MODEL, OPENAI_API_KEY
 
-client = OpenAI(api_key=api_key)
+client: OpenAI = OpenAI(api_key=OPENAI_API_KEY)
 
 while True:
-    user_input = input("User> ")
-    if user_input == "exit":
+    user_input: str = input("User> ").strip()
+    if not user_input:
+        continue
+    elif user_input == "exit":
         break
-    response = client.chat.completions.create(
-        model=model,
+
+    response: ChatCompletion = client.chat.completions.create(
+        model=GPT_MODEL,
         temperature=0.9,
         messages=[
             {"role": "system", "content": "너는 사용자를 도와주는 상담사야."},

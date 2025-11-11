@@ -1,34 +1,35 @@
 #!../.venv/bin/python3
-import os
+from __future__ import annotations
 
-from dotenv import load_dotenv
 from openai import OpenAI
+from openai.types.chat import ChatCompletion, ChatCompletionMessageParam
 
-load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
-model = os.getenv("GPT_MODEL")
+from env import GPT_MODEL, OPENAI_API_KEY
 
-client = OpenAI(api_key=api_key)
+client: OpenAI = OpenAI(api_key=OPENAI_API_KEY)
 
 
-def get_ai_response(msgs):
-    response = client.chat.completions.create(
-        model=model,
+def get_ai_response(messages: list[ChatCompletionMessageParam]) -> str:
+    response: ChatCompletion = client.chat.completions.create(
+        model=GPT_MODEL,
         temperature=0.9,
-        messages=msgs,
+        messages=messages,
     )
     return response.choices[0].message.content
 
 
-messages = [
+_messages: list[ChatCompletionMessageParam] = [
     {"role": "system", "content": "너는 사용자를 도와주는 상담사야."},
 ]
 
 while True:
-    user_input = input("User> ")
-    if user_input == "exit":
+    user_input: str = input("User> ").strip()
+    if not user_input:
+        continue
+    elif user_input == "exit":
         break
-    messages.append({"role": "user", "content": user_input})
-    ai_response = get_ai_response(messages)
-    messages.append({"role": "assistant", "content": ai_response})
+
+    _messages.append({"role": "user", "content": user_input})
+    ai_response: str = get_ai_response(_messages)
+    _messages.append({"role": "assistant", "content": ai_response})
     print("AI> " + ai_response)

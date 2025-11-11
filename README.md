@@ -14,8 +14,8 @@ $ source .venv/bin/activate
 ### Create Configuration File
 Create the `.env` file with the following content in the project root directory.
 ```text
-OPENAI_API_KEY=<openai-api-key>
-GPT_MODEL=gpt-4o-mini
+AIEX_GPT_MODEL=gpt-4o-mini
+AIEX_OPENAI_API_KEY=<openai-api-key>
 ```
 
 ## Usage
