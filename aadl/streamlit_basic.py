@@ -23,8 +23,8 @@ st.title("💬 Chatbot")
 if "messages" not in st.session_state:
     st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
 
-for msg in st.session_state.messages:
-    st.chat_message(msg["role"]).write(msg["content"])
+for message in st.session_state.messages:
+    st.chat_message(message["role"]).write(message["content"])
 
 if prompt := st.chat_input():
     if not openai_api_key:
@@ -34,6 +34,6 @@ if prompt := st.chat_input():
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
     response: ChatCompletion = client.chat.completions.create(model=gpt_model, messages=st.session_state.messages)
-    msg = response.choices[0].message.content
-    st.session_state.messages.append({"role": "assistant", "content": msg})
-    st.chat_message("assistant").write(msg)
+    content: str | None = response.choices[0].message.content
+    st.session_state.messages.append({"role": "assistant", "content": content})
+    st.chat_message("assistant").write(content)
