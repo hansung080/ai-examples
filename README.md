@@ -15,22 +15,22 @@ $ source .venv/bin/activate
 Create the `.env` file with the following content in the project root directory.
 ```text
 AIEX_GPT_MODEL=gpt-4o-mini
-AIEX_OPENAI_API_KEY=<openai-api-key>
+AIEX_OPENAI_API_KEY=<openai api key>
 ```
 
 ## Usage
 ### Run Standalone Application
 To run a standalone application, run the following commands on the system environment.
 ```sh
-$ cd <python-file-directory> 
-$ ./<python-file> [arguments]
+$ cd <python file directory> 
+$ ./<python file> [<arguments>...]
 ```
 
 ### Run Streamlit Application
 To run a Streamlit application, run the following commands on the virtual environment. 
 ```sh
 $ source .venv/bin/activate
-(.venv) $ streamlit run <python-file> [arguments]
+(.venv) $ streamlit run <python file> [<arguments>...]
 ```
 
 ## AI Examples
