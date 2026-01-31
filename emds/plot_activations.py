@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Self
 
-import matplotlib
+import matplotlib as mpl
 import sympy as sp
 from matplotlib.backends import BackendFilter, backend_registry
 from pathlib import Path
@@ -45,12 +45,12 @@ class Args:
 
 
 def is_interactive_backend() -> bool:
-    return matplotlib.get_backend() in backend_registry.list_builtin(BackendFilter.INTERACTIVE)
+    return mpl.get_backend() in backend_registry.list_builtin(BackendFilter.INTERACTIVE)
 
 
 def ensure_interactive_backend() -> None:
     if not is_interactive_backend():
-        print(f"error: matplotlib backend {matplotlib.get_backend()!r} is not an interactive backend", file=sys.stderr)
+        print(f"error: matplotlib backend {mpl.get_backend()!r} is not an interactive backend", file=sys.stderr)
         sys.exit(1)
 
 
