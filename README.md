@@ -49,4 +49,4 @@ $ source .venv/bin/activate
 - Do it! AI Agent Development with LLM (aadl)
   - gpt_basic, one_shot, few_shot, single_turn, multi_turn, streamlit_basic
 - Essential Math for Data Science (emds)
-  - nn_for_bin_class 
+  - plot_activations, background_brightness_classifier 
