@@ -68,7 +68,7 @@ def plot_relu() -> None:
 
 def plot_sigmoid() -> None:
     x = sp.symbols("x", real=True)
-    sigmoid = sp.S.One / (sp.S.One + sp.exp(-x))
+    sigmoid = 1 / (1 + sp.exp(-x))
     sp.plot(
         sigmoid,
         (x, -5, 5),
