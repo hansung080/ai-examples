@@ -6,11 +6,11 @@ from typing import cast
 import numpy as np
 from sklearn.model_selection import train_test_split
 
+from common import CLASSIFICATION_THRESHOLD
 from common import BArray, FArray, IArray, d_relu, d_sigmoid, read_data, relu, sigmoid
 
 N_EPOCHS = 100_000
 LEARNING_RATE = 0.05
-CLASSIFICATION_THRESHOLD = 0.5
 
 
 class NeuralNetwork:

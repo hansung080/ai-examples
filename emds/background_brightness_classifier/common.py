@@ -7,6 +7,8 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
+CLASSIFICATION_THRESHOLD = 0.5
+
 FArray: TypeAlias = NDArray[np.floating]
 IArray: TypeAlias = NDArray[np.integer]
 BArray: TypeAlias = NDArray[np.bool_]
