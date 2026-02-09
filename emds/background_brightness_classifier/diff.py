@@ -31,18 +31,18 @@ _a2 = sigmoid(z2)
 da2_dz2 = sp.diff(_a2, z2)
 assert da2_dz2 == sp.exp(-z2) / (1 + sp.exp(-z2)) ** 2
 
-# dZ2/dA1
-_z2 = a1 * w2 + b2
-dz2_da1 = sp.diff(_z2, a1)
-assert dz2_da1 == w2
-
 # dZ2/dW2
+_z2 = a1 * w2 + b2
 dz2_dw2 = sp.diff(_z2, w2)
 assert dz2_dw2 == a1
 
 # dZ2/dB2
 dz2_db2 = sp.diff(_z2, b2)
 assert dz2_db2 == 1
+
+# dZ2/dA1
+dz2_da1 = sp.diff(_z2, a1)
+assert dz2_da1 == w2
 
 # dA1/dZ1
 _a1 = relu(z1)
