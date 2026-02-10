@@ -89,6 +89,11 @@ class NeuralNetwork:
         accuracy = correct_mask.mean()
         return accuracy
 
+    def predict(self, r: int, g: int, b: int) -> float:
+        x: FArray = np.array([[r, g, b]]) / 255.0
+        y_pred: FArray = self.forward_prop(x)[3]
+        return float(y_pred[0, 0])
+
 
 if __name__ == "__main__":
     nn = NeuralNetwork()
