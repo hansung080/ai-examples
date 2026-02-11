@@ -4,32 +4,23 @@ from __future__ import annotations
 from typing import cast
 
 import numpy as np
-from sklearn.model_selection import train_test_split
 
 from common import CLASSIFICATION_THRESHOLD
-from common import BArray, FArray, IArray, d_relu, d_sigmoid, read_data, relu, sigmoid
+from common import BArray, FArray, IArray, d_relu, d_sigmoid, elapsed_time, read_and_split_data, relu, sigmoid
 
 N_EPOCHS = 100_000
-LEARNING_RATE = 0.05
+LEARNING_RATE = np.float32(0.05)
 
 
 class NeuralNetwork:
-    def __init__(self) -> None:
-        all_data = read_data()
-        x_all: FArray = all_data.iloc[:, 0:3].values / 255.0
-        y_all: IArray = all_data.iloc[:, -1].values
+    def __init__(self, *, seed: int | None = None) -> None:
+        self.x_train, self.x_test, self.y_train, self.y_test = read_and_split_data()
 
-        x_train, x_test, y_train, y_test = train_test_split(x_all, y_all, test_size=1 / 3)
-
-        self.x_train: FArray = x_train
-        self.y_train: IArray = y_train
-        self.x_test: FArray = x_test
-        self.y_test: IArray = y_test
-
-        self.w1: FArray = np.random.rand(3, 3)
-        self.b1: FArray = np.random.rand(1, 3)
-        self.w2: FArray = np.random.rand(3, 1)
-        self.b2: FArray = np.random.rand(1, 1)
+        self.rng = np.random.default_rng(seed)
+        self.w1: FArray = self.rng.random((3, 3), dtype=np.float32)
+        self.b1: FArray = self.rng.random((1, 3), dtype=np.float32)
+        self.w2: FArray = self.rng.random((3, 1), dtype=np.float32)
+        self.b2: FArray = self.rng.random((1, 1), dtype=np.float32)
 
     def forward_prop(self, x: FArray) -> tuple[FArray, FArray, FArray, FArray]:
         z1 = x @ self.w1 + self.b1   # (N, 3) = (N, 3) @ (3, 3) + (1, 3)
@@ -47,14 +38,17 @@ class NeuralNetwork:
         z2: FArray,
         a2: FArray,
     ) -> tuple[FArray, FArray, FArray, FArray]:
-        dl_da2 = 2 * a2 - 2 * y
+        one = np.float32(1.0)
+        two = np.float32(2.0)
+
+        dl_da2 = two * a2 - two * y.astype(np.float32)
         da2_dz2 = d_sigmoid(z2)
         dz2_dw2 = a1
-        dz2_db2 = 1
+        dz2_db2 = one
         dz2_da1 = self.w2
         da1_dz1 = d_relu(z1)
         dz1_dw1 = x
-        dz1_db1 = 1
+        dz1_db1 = one
 
         dl_dw2 = dl_da2 @ da2_dz2 @ dz2_dw2    # (1, 3) = (1, 1) @ (1, 1) @ (1, 3)
         dl_db2 = dl_da2 @ da2_dz2 * dz2_db2    # (1, 1) = (1, 1) @ (1, 1) * 1
@@ -68,8 +62,9 @@ class NeuralNetwork:
 
     def train(self) -> None:
         n_samples = self.x_train.shape[0]
+
         for epoch in range(N_EPOCHS):
-            index = np.random.choice(n_samples, 1, replace=False)
+            index = self.rng.choice(n_samples, 1, replace=False)
             x_sample = self.x_train[index]
             y_sample = self.y_train[index]
 
@@ -84,18 +79,18 @@ class NeuralNetwork:
 
     def evaluate(self) -> float:
         y_pred: FArray = self.forward_prop(self.x_test)[3]
-        y_hat: IArray = (y_pred >= CLASSIFICATION_THRESHOLD).flatten().astype(int)
+        y_hat: IArray = (y_pred >= CLASSIFICATION_THRESHOLD).flatten().astype(np.int64)
         correct_mask: BArray = np.equal(y_hat, self.y_test)
-        accuracy = correct_mask.mean()
-        return accuracy
+        accuracy: np.float32 = correct_mask.mean()
+        return float(accuracy)
 
     def predict(self, r: int, g: int, b: int) -> float:
-        x: FArray = np.array([[r, g, b]]) / 255.0
+        x: FArray = np.array([[r, g, b]], dtype=np.float32) / np.float32(255.0)
         y_pred: FArray = self.forward_prop(x)[3]
         return float(y_pred[0, 0])
 
 
 if __name__ == "__main__":
     nn = NeuralNetwork()
-    nn.train()
-    print(f"accuracy: {nn.evaluate():.2%}")
+    elapsed = elapsed_time(nn.train)
+    print(f"train time: {elapsed:.2f}s, accuracy: {nn.evaluate():.2%}")
