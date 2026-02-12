@@ -9,11 +9,13 @@ import pandas as pd
 from numpy.typing import NDArray
 from sklearn.model_selection import train_test_split
 
+N_EPOCHS = 100_000
+LEARNING_RATE = np.float32(0.05)
 CLASSIFICATION_THRESHOLD = np.float32(0.5)
 
-FArray: TypeAlias = NDArray[np.float32]
-IArray: TypeAlias = NDArray[np.int64]
-BArray: TypeAlias = NDArray[np.bool_]
+F32Array: TypeAlias = NDArray[np.float32]
+I64Array: TypeAlias = NDArray[np.int64]
+BoolArray: TypeAlias = NDArray[np.bool_]
 
 
 def read_data() -> pd.DataFrame:
@@ -27,29 +29,29 @@ def read_data() -> pd.DataFrame:
         return pd.read_csv("https://tinyurl.com/y2qmhfsr")
 
 
-def read_and_split_data() -> tuple[FArray, FArray, IArray, IArray]:
+def read_and_split_data() -> tuple[F32Array, F32Array, I64Array, I64Array]:
     data = read_data()
-    x_all: FArray = data.iloc[:, :-1].to_numpy(dtype=np.float32) / np.float32(255.0)
-    y_all: IArray = data.iloc[:, -1].to_numpy(dtype=np.int64)
+    x_all: F32Array = data.iloc[:, :-1].to_numpy(dtype=np.float32) / np.float32(255.0)
+    y_all: I64Array = data.iloc[:, -1].to_numpy(dtype=np.int64)
 
     x_train, x_test, y_train, y_test = train_test_split(x_all, y_all, test_size=1 / 3)
     return x_train, x_test, y_train, y_test
 
 
-def relu(x: FArray) -> FArray:
+def relu(x: F32Array) -> F32Array:
     return np.maximum(np.float32(0.0), x)
 
 
-def d_relu(x: FArray) -> FArray:
+def d_relu(x: F32Array) -> F32Array:
     return (x > np.float32(0.0)).astype(np.float32)
 
 
-def sigmoid(x: FArray) -> FArray:
+def sigmoid(x: F32Array) -> F32Array:
     one = np.float32(1.0)
     return one / (one + np.exp(-x))
 
 
-def d_sigmoid(x: FArray) -> FArray:
+def d_sigmoid(x: F32Array) -> F32Array:
     exp_neg_x = np.exp(-x)
     return exp_neg_x / (np.float32(1.0) + exp_neg_x) ** np.float32(2.0)
 

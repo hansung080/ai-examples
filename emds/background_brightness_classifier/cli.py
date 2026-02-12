@@ -39,8 +39,8 @@ def select_neural_network() -> tuple[NeuralNetworkProtocol, str]:
 
 def main() -> None:
     nn, name = select_neural_network()
-    elapsed = elapsed_time(nn.train)
-    print(f"{name}: train time: {elapsed:.2f}s, accuracy: {nn.evaluate():.2%}\n")
+    train_time = elapsed_time(nn.train)
+    print(f"{name}: train time: {train_time:.2f}s, accuracy: {nn.evaluate():.2%}\n")
 
     fcr = FontColorRecommender(nn)
 
