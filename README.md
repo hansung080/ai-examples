@@ -9,9 +9,10 @@ Various AI code examples
 To create a virtual environment and install dependent packages, run the following commands in the project root directory.
 
 ```sh
-$ python3.13 -m venv .venv
+$ python3.12 -m venv .venv
 $ source .venv/bin/activate
-(.venv) $ pip3 install -r requirements.txt
+(.venv) $ pip install --upgrade pip
+(.venv) $ pip install -r requirements.txt
 (.venv) $ deactivate
 ```
 
@@ -48,5 +49,7 @@ $ source .venv/bin/activate
  
 - Do it! AI Agent Development with LLM (aadl)
   - gpt_basic, one_shot, few_shot, single_turn, multi_turn, streamlit_basic
+- Deep Learning with Python (Second Edition) (dlp)
+  - tensorflow_info, mnist_classifier 
 - Essential Math for Data Science (emds)
   - plot_activations, background_brightness_classifier 

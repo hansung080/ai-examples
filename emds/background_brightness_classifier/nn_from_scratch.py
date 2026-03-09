@@ -1,4 +1,4 @@
-#!../../.venv/bin/python3
+#!../../.venv/bin/python
 from __future__ import annotations
 
 from typing import cast

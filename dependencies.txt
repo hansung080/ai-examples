@@ -1,8 +1,9 @@
 matplotlib==3.10.8
-numpy==2.3.2
-openai==1.58.1
-pandas==2.3.1
-python-dotenv==1.1.1
-scikit-learn==1.7.2
-streamlit==1.47.1
+openai==2.26.0
+pandas==2.3.3
+python-dotenv==1.2.2
+scikit-learn==1.8.0
+streamlit==1.55.0
 sympy==1.14.0
+tensorflow-macos==2.16.2  # installed with keras==3.13.2 numpy==1.26.4 tensorflow==2.16.2
+tensorflow-metal==1.2.0
