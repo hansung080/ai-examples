@@ -5,13 +5,15 @@ from typing import cast
 
 import numpy as np
 
-from common import CLASSIFICATION_THRESHOLD, LEARNING_RATE, N_EPOCHS
-from common import BoolArray, F32Array, I64Array, d_relu, d_sigmoid, elapsed_time, read_and_split_data, relu, sigmoid
+from common import CLASSIFICATION_THRESHOLD, LEARNING_RATE, N_CLASSES, N_EPOCHS, N_FEATURES
+from common import BoolArray, F32Array, U8Array
+from common import d_relu, d_sigmoid, elapsed_time, load_data, preprocess_data, relu, sigmoid
+from nn_protocol import Background, Evaluation
 
 
 class NeuralNetwork:
     def __init__(self, *, seed: int | None = None) -> None:
-        self._x_train, self._x_test, self._y_train, self._y_test = read_and_split_data()
+        (self._x_train, self._y_train), (self._x_test, self._y_test) = load_data()
 
         self._rng = np.random.default_rng(seed)
         self._w1: F32Array = self._rng.random((3, 3), dtype=np.float32)
@@ -35,7 +37,7 @@ class NeuralNetwork:
     def _backward_prop(
         self,
         x: F32Array,
-        y: I64Array,
+        y: U8Array,
         z1: F32Array,
         a1: F32Array,
         z2: F32Array,
@@ -66,7 +68,7 @@ class NeuralNetwork:
     def train(self) -> None:
         n_samples = self._x_train.shape[0]
 
-        for epoch in range(N_EPOCHS):
+        for _ in range(N_EPOCHS):
             index = self._rng.choice(n_samples, 1, replace=False)
             x_sample = self._x_train[index]
             y_sample = self._y_train[index]
@@ -80,20 +82,39 @@ class NeuralNetwork:
             self._w2 -= LEARNING_RATE * dl_dw2
             self._b2 -= LEARNING_RATE * dl_db2
 
-    def evaluate(self) -> float:
-        y_pred: F32Array = self._forward_prop(self._x_test)[3]
-        y_hat: I64Array = (y_pred >= CLASSIFICATION_THRESHOLD).flatten().astype(np.int64)
-        correct_mask: BoolArray = np.equal(y_hat, self._y_test)
+    def evaluate(self) -> Evaluation:
+        y_proba: F32Array = self._forward_prop(self._x_test)[3]
+        y_pred: U8Array = (y_proba >= CLASSIFICATION_THRESHOLD).flatten().astype(np.uint8)
+        correct_mask: BoolArray = np.equal(y_pred, self._y_test)
         accuracy: np.float32 = correct_mask.mean()
-        return float(accuracy)
+        return Evaluation(float(accuracy))
 
-    def predict(self, r: int, g: int, b: int) -> float:
-        x: F32Array = np.array([[r, g, b]], dtype=np.float32) / np.float32(255.0)
-        y_pred: F32Array = self._forward_prop(x)[3]
-        return float(y_pred[0, 0])
+    def predict_proba(self, inputs: U8Array | F32Array) -> F32Array:
+        assert inputs.ndim == 2 and inputs.shape[1] == N_FEATURES
+        x: F32Array = preprocess_data(inputs)
+        y_proba: F32Array = self._forward_prop(x)[3]
+
+        # `np.concatenate((np.float32(1.0) - y_proba, y_proba), axis=1)` can be used instead of `np.hstack(...)`.
+        y_proba: F32Array = np.hstack((np.float32(1.0) - y_proba, y_proba))
+        assert y_proba.shape == (inputs.shape[0], N_CLASSES)
+        return y_proba
+
+    def predict(self, inputs: U8Array | F32Array) -> U8Array:
+        y_proba: F32Array = self.predict_proba(inputs)
+
+        # Binary classification:     sigmoid -> threshold
+        # Multilabel classification: sigmoid -> threshold
+        # Multiclass classification: softmax -> argmax: `y_proba.argmax(axis=1).astype(np.uint8)`
+        y_pred: U8Array = (y_proba[:, 1] >= CLASSIFICATION_THRESHOLD).astype(np.uint8)
+        assert y_pred.shape == (inputs.shape[0],)
+        return y_pred
+
+    def predict_one(self, r: int, g: int, b: int) -> Background:
+        y_pred: U8Array = self.predict(np.array([[r, g, b]], dtype=np.float32))
+        return Background(y_pred[0])
 
 
 if __name__ == "__main__":
     nn = NeuralNetwork()
     train_time = elapsed_time(nn.train)
-    print(f"train time: {train_time:.2f}s, accuracy: {nn.evaluate():.2%}")
+    print(f"train time: {train_time:.2f}s, accuracy: {nn.evaluate().accuracy:.2%}")

@@ -3,12 +3,10 @@ from __future__ import annotations
 
 import sys
 
-from common import CLASSIFICATION_THRESHOLD, elapsed_time
+from common import elapsed_time
 from nn_from_scratch import NeuralNetwork as ScratchNeuralNetwork
-from nn_protocol import NeuralNetworkProtocol
+from nn_protocol import Background, NeuralNetworkProtocol
 from nn_sklearn import NeuralNetwork as SklearnNeuralNetwork
-
-CLASSIFICATION_THRESHOLD_FLOAT = float(CLASSIFICATION_THRESHOLD)
 
 
 class FontColorRecommender:
@@ -16,11 +14,11 @@ class FontColorRecommender:
         self.nn = nn
 
     def recommend(self, r: int, g: int, b: int) -> str:
-        pred = self.nn.predict(r, g, b)
-        if pred >= CLASSIFICATION_THRESHOLD_FLOAT:
-            return f"BLACK font recommended on light background ({r}, {g}, {b})"
-        else:
-            return f"WHITE font recommended on dark background ({r}, {g}, {b})"
+        match self.nn.predict_one(r, g, b):
+            case Background.DARK:
+                return f"WHITE font recommended on dark background ({r}, {g}, {b})"
+            case Background.LIGHT:
+                return f"BLACK font recommended on light background ({r}, {g}, {b})"
 
 
 def select_neural_network() -> tuple[NeuralNetworkProtocol, str]:
@@ -37,10 +35,18 @@ def select_neural_network() -> tuple[NeuralNetworkProtocol, str]:
             sys.exit(1)
 
 
+def validate_rgb(r: str, g: str, b: str) -> tuple[int, int, int]:
+    rgb = int(r), int(g), int(b)
+    for c in rgb:
+        if c < 0 or c > 255:
+            raise ValueError(f"{c} is out of range [0, 255]")
+    return rgb
+
+
 def main() -> None:
     nn, name = select_neural_network()
     train_time = elapsed_time(nn.train)
-    print(f"{name}: train time: {train_time:.2f}s, accuracy: {nn.evaluate():.2%}\n")
+    print(f"{name}: train time: {train_time:.2f}s, accuracy: {nn.evaluate().accuracy:.2%}\n")
 
     fcr = FontColorRecommender(nn)
 
@@ -53,7 +59,7 @@ def main() -> None:
 
         try:
             r, g, b = user_input.split(",")
-            print(fcr.recommend(int(r), int(g), int(b)))
+            print(fcr.recommend(*validate_rgb(r, g, b)))
         except ValueError as e:
             print(f"error: {e}", file=sys.stderr)
 
