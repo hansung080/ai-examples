@@ -42,18 +42,18 @@ class NeuralNetwork:
         accuracy: float = self._nn.score(self._x_test, self._y_test)
         return Evaluation(accuracy)
 
-    def predict_proba(self, inputs: U8Array | F32Array) -> F32Array:
-        assert inputs.ndim == 2 and inputs.shape[1] == N_FEATURES
-        x: F32Array = preprocess_data(inputs)
+    def predict_proba(self, rgbs: U8Array | F32Array) -> F32Array:
+        assert rgbs.ndim == 2 and rgbs.shape[1] == N_FEATURES
+        x: F32Array = preprocess_data(rgbs)
         y_proba: F32Array = self._nn.predict_proba(x)
-        assert y_proba.shape == (inputs.shape[0], N_CLASSES)
+        assert y_proba.shape == (rgbs.shape[0], N_CLASSES)
         return y_proba
 
-    def predict(self, inputs: U8Array | F32Array) -> U8Array:
-        assert inputs.ndim == 2 and inputs.shape[1] == N_FEATURES
-        x: F32Array = preprocess_data(inputs)
+    def predict(self, rgbs: U8Array | F32Array) -> U8Array:
+        assert rgbs.ndim == 2 and rgbs.shape[1] == N_FEATURES
+        x: F32Array = preprocess_data(rgbs)
         y_pred: U8Array = self._nn.predict(x)
-        assert y_pred.shape == (inputs.shape[0],)
+        assert y_pred.shape == (rgbs.shape[0],)
         return y_pred
 
     def predict_one(self, r: int, g: int, b: int) -> Background:
