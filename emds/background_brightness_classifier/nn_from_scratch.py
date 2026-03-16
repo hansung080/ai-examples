@@ -89,24 +89,24 @@ class NeuralNetwork:
         accuracy: np.float32 = correct_mask.mean()
         return Evaluation(float(accuracy))
 
-    def predict_proba(self, rgbs: U8Array | F32Array) -> F32Array:
-        assert rgbs.ndim == 2 and rgbs.shape[1] == N_FEATURES
-        x: F32Array = preprocess_data(rgbs)
+    def predict_proba(self, colors: U8Array | F32Array) -> F32Array:
+        assert colors.ndim == 2 and colors.shape[1] == N_FEATURES
+        x: F32Array = preprocess_data(colors)
         y_proba: F32Array = self._forward_prop(x)[3]
 
-        # `np.concatenate((np.float32(1.0) - y_proba, y_proba), axis=1)` can be used instead of `np.hstack(...)`.
+        # `np.concatenate((np.float32(1.0) - y_proba, y_proba), axis=1)` can be an alternative to `np.hstack(...)`.
         y_proba: F32Array = np.hstack((np.float32(1.0) - y_proba, y_proba))
-        assert y_proba.shape == (rgbs.shape[0], N_CLASSES)
+        assert y_proba.shape == (colors.shape[0], N_CLASSES)
         return y_proba
 
-    def predict(self, rgbs: U8Array | F32Array) -> U8Array:
-        y_proba: F32Array = self.predict_proba(rgbs)
+    def predict(self, colors: U8Array | F32Array) -> U8Array:
+        y_proba: F32Array = self.predict_proba(colors)
 
         # Binary classification:     sigmoid -> threshold
         # Multilabel classification: sigmoid -> threshold
         # Multiclass classification: softmax -> argmax: `y_proba.argmax(axis=1).astype(np.uint8)`
         y_pred: U8Array = (y_proba[:, 1] >= CLASSIFICATION_THRESHOLD).astype(np.uint8)
-        assert y_pred.shape == (rgbs.shape[0],)
+        assert y_pred.shape == (colors.shape[0],)
         return y_pred
 
     def predict_one(self, r: int, g: int, b: int) -> Background:
@@ -117,4 +117,5 @@ class NeuralNetwork:
 if __name__ == "__main__":
     nn = NeuralNetwork()
     train_time = elapsed_time(nn.train)
-    print(f"train time: {train_time:.2f}s, accuracy: {nn.evaluate().accuracy:.2%}")
+    evaluation = nn.evaluate()
+    print(f"TRAIN TIME: {train_time:.2f}s, ACCURACY: {evaluation.accuracy:.2%}")

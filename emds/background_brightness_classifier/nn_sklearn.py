@@ -14,7 +14,7 @@ class NeuralNetwork:
     def __init__(self, *, random_state: int | RandomState | None = None) -> None:
         (self._x_train, self._y_train), (self._x_test, self._y_test) = load_data()
 
-        self._nn = MLPClassifier(
+        self._model = MLPClassifier(
             hidden_layer_sizes=(3,),
             activation="relu",
             solver="sgd",
@@ -25,35 +25,35 @@ class NeuralNetwork:
 
     def weights(self) -> list[F32Array] | None:
         try:
-            return self._nn.coefs_
+            return self._model.coefs_
         except AttributeError:
             return None
 
     def biases(self) -> list[F32Array] | None:
         try:
-            return self._nn.intercepts_
+            return self._model.intercepts_
         except AttributeError:
             return None
 
     def train(self) -> None:
-        self._nn.fit(self._x_train, self._y_train)
+        self._model.fit(self._x_train, self._y_train)
 
     def evaluate(self) -> Evaluation:
-        accuracy: float = self._nn.score(self._x_test, self._y_test)
+        accuracy: float = self._model.score(self._x_test, self._y_test)
         return Evaluation(accuracy)
 
-    def predict_proba(self, rgbs: U8Array | F32Array) -> F32Array:
-        assert rgbs.ndim == 2 and rgbs.shape[1] == N_FEATURES
-        x: F32Array = preprocess_data(rgbs)
-        y_proba: F32Array = self._nn.predict_proba(x)
-        assert y_proba.shape == (rgbs.shape[0], N_CLASSES)
+    def predict_proba(self, colors: U8Array | F32Array) -> F32Array:
+        assert colors.ndim == 2 and colors.shape[1] == N_FEATURES
+        x: F32Array = preprocess_data(colors)
+        y_proba: F32Array = self._model.predict_proba(x)
+        assert y_proba.shape == (colors.shape[0], N_CLASSES)
         return y_proba
 
-    def predict(self, rgbs: U8Array | F32Array) -> U8Array:
-        assert rgbs.ndim == 2 and rgbs.shape[1] == N_FEATURES
-        x: F32Array = preprocess_data(rgbs)
-        y_pred: U8Array = self._nn.predict(x)
-        assert y_pred.shape == (rgbs.shape[0],)
+    def predict(self, colors: U8Array | F32Array) -> U8Array:
+        assert colors.ndim == 2 and colors.shape[1] == N_FEATURES
+        x: F32Array = preprocess_data(colors)
+        y_pred: U8Array = self._model.predict(x)
+        assert y_pred.shape == (colors.shape[0],)
         return y_pred
 
     def predict_one(self, r: int, g: int, b: int) -> Background:
@@ -64,4 +64,5 @@ class NeuralNetwork:
 if __name__ == "__main__":
     nn = NeuralNetwork()
     train_time = elapsed_time(nn.train)
-    print(f"train time: {train_time:.2f}s, accuracy: {nn.evaluate().accuracy:.2%}")
+    evaluation = nn.evaluate()
+    print(f"TRAIN TIME: {train_time:.2f}s, ACCURACY: {evaluation.accuracy:.2%}")

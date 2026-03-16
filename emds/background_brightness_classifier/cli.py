@@ -46,7 +46,8 @@ def validate_rgb(r: str, g: str, b: str) -> tuple[int, int, int]:
 def main() -> None:
     nn, name = select_neural_network()
     train_time = elapsed_time(nn.train)
-    print(f"{name}: train time: {train_time:.2f}s, accuracy: {nn.evaluate().accuracy:.2%}\n")
+    evaluation = nn.evaluate()
+    print(f"{name}: TRAIN TIME: {train_time:.2f}s, ACCURACY: {evaluation.accuracy:.2%}\n")
 
     fcr = FontColorRecommender(nn)
 
