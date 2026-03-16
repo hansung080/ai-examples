@@ -26,6 +26,9 @@ class NeuralNetwork:
         )
 
     def train(self) -> None:
+        # Each epoch consumes all samples.
+        # 469 batches per epoch exist and each batch updates the weights (469 = ceil(60000 / 128)).
+        # 2345 weight updates occur for all epochs (2345 = 469 * 5).
         self._model.fit(self._train_images, self._train_labels, epochs=N_EPOCHS, batch_size=BATCH_SIZE)
 
     def evaluate(self) -> Evaluation:
@@ -47,7 +50,7 @@ class NeuralNetwork:
 
     def predict_one(self, image: U8Array) -> Digit:
         assert image.shape == (IMAGE_HEIGHT, IMAGE_WIDTH)
-        # `image.reshape(1, IMAGE_HEIGHT, IMAGE_WIDTH)` or `np.expand_dims(image, axis=0)` can be an alternative.
+        # `image.reshape((1, image.shape[0], image.shape[1]))` or `np.expand_dims(image, axis=0)` can be an alternative.
         pred: U8Array = self.predict(image[np.newaxis, ...])  # or `image[None, :, :]`
         return Digit(pred[0])
 
