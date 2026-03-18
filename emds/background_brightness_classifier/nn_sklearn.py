@@ -17,7 +17,7 @@ class NeuralNetwork:
         self._model = MLPClassifier(
             hidden_layer_sizes=(3,),
             activation="relu",
-            solver="sgd",
+            solver="sgd",  # mini-batch SGD with batch size `min(200, n_samples)`
             max_iter=N_EPOCHS,
             learning_rate_init=float(LEARNING_RATE),
             random_state=random_state,
@@ -35,6 +35,7 @@ class NeuralNetwork:
         except AttributeError:
             return None
 
+    # In this mini-batch SGD, 500000 (= 100000 * ceil(896 / 200)) weight updates are performed.
     def train(self) -> None:
         self._model.fit(self._x_train, self._y_train)
 

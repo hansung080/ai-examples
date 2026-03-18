@@ -25,10 +25,8 @@ class NeuralNetwork:
             metrics=["accuracy"],
         )
 
+    # In this mini-batch SGD, 2345 (= 5 * ceil(60000 / 128)) weight updates are performed.
     def train(self) -> None:
-        # Each epoch consumes all samples.
-        # 469 batches per epoch exist and each batch updates the weights (469 = ceil(60000 / 128)).
-        # 2345 weight updates occur for all epochs (2345 = 469 * 5).
         self._model.fit(self._train_images, self._train_labels, epochs=N_EPOCHS, batch_size=BATCH_SIZE)
 
     def evaluate(self) -> Evaluation:

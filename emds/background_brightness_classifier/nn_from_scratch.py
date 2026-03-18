@@ -10,6 +10,8 @@ from common import BoolArray, F32Array, U8Array
 from common import d_relu, d_sigmoid, elapsed_time, load_data, preprocess_data, relu, sigmoid
 from nn_protocol import Background, Evaluation
 
+N_STEPS = N_EPOCHS
+
 
 class NeuralNetwork:
     def __init__(self, *, seed: int | None = None) -> None:
@@ -27,14 +29,14 @@ class NeuralNetwork:
     def biases(self) -> list[F32Array]:
         return [self._b1, self._b2]
 
-    def _forward_prop(self, x: F32Array) -> tuple[F32Array, F32Array, F32Array, F32Array]:
+    def _forward_pass(self, x: F32Array) -> tuple[F32Array, F32Array, F32Array, F32Array]:
         z1 = x @ self._w1 + self._b1   # (N, 3) = (N, 3) @ (3, 3) + (1, 3)
         a1 = relu(z1)                  # (N, 3) = relu((N, 3))
         z2 = a1 @ self._w2 + self._b2  # (N, 1) = (N, 3) @ (3, 1) + (1, 1)
         a2 = sigmoid(z2)               # (N, 1) = sigmoid((N, 1))
         return z1, a1, z2, a2
 
-    def _backward_prop(
+    def _backward_pass(
         self,
         x: F32Array,
         y: U8Array,
@@ -65,17 +67,38 @@ class NeuralNetwork:
             (dl_dw1.T, dl_db1, dl_dw2.T, dl_db2),
         )
 
+    # <<< [Stochastic] Gradient Descent >>>
+    #
+    # 1. SGD (Online SGD [with/without replacement]) - batch_size: 1
+    #   - Each sample updates the weights using its gradient.
+    #   - Weight updates: n_epochs * n_samples (without replacement), n_steps (with replacement)
+    #
+    # 2. Mini-batch SGD - batch_size: 2 ~ n_samples-1
+    #   - Each batch updates the weights using the gradient averaged over the batch.
+    #   - Weight updates: n_epochs * n_batches => n_epochs * ceil(n_samples / batch_size)
+    #
+    # 3. Batch GD (Full-batch GD) - batch_size: n_samples
+    #   - Each epoch updates the weights using the gradient averaged over the entire dataset.
+    #   - Weight updates: n_epochs
+    #
+    # Notes:
+    #   - An epoch is a full pass through the entire dataset.
+    #   - A batch is a subset of the dataset used for one step of training.
+    #   - A step consists of a forward pass, a backward pass, and a weight update,
+    #     and uses a single sample for online SGD, a batch for mini-batch SGD, and the entire dataset for full-batch GD.
+
+    # In this online SGD with replacement, 100000 weight updates are performed.
     def train(self) -> None:
         n_samples = self._x_train.shape[0]
 
-        for _ in range(N_EPOCHS):
+        for _ in range(N_STEPS):
             index = self._rng.choice(n_samples, 1, replace=False)
             x_sample = self._x_train[index]
             y_sample = self._y_train[index]
 
-            z1, a1, z2, a2 = self._forward_prop(x_sample)
+            z1, a1, z2, a2 = self._forward_pass(x_sample)
 
-            dl_dw1, dl_db1, dl_dw2, dl_db2 = self._backward_prop(x_sample, y_sample, z1, a1, z2, a2)
+            dl_dw1, dl_db1, dl_dw2, dl_db2 = self._backward_pass(x_sample, y_sample, z1, a1, z2, a2)
 
             self._w1 -= LEARNING_RATE * dl_dw1
             self._b1 -= LEARNING_RATE * dl_db1
@@ -83,7 +106,7 @@ class NeuralNetwork:
             self._b2 -= LEARNING_RATE * dl_db2
 
     def evaluate(self) -> Evaluation:
-        y_proba: F32Array = self._forward_prop(self._x_test)[3]
+        y_proba: F32Array = self._forward_pass(self._x_test)[3]
         y_pred: U8Array = (y_proba >= CLASSIFICATION_THRESHOLD).flatten().astype(np.uint8)
         correct_mask: BoolArray = np.equal(y_pred, self._y_test)
         accuracy: np.float32 = correct_mask.mean()
@@ -92,7 +115,7 @@ class NeuralNetwork:
     def predict_proba(self, colors: U8Array | F32Array) -> F32Array:
         assert colors.ndim == 2 and colors.shape[1] == N_FEATURES
         x: F32Array = preprocess_data(colors)
-        y_proba: F32Array = self._forward_prop(x)[3]
+        y_proba: F32Array = self._forward_pass(x)[3]
 
         # `np.concatenate((np.float32(1.0) - y_proba, y_proba), axis=1)` can be an alternative to `np.hstack(...)`.
         y_proba: F32Array = np.hstack((np.float32(1.0) - y_proba, y_proba))
