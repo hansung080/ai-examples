@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import os
+import random
+import sys
 import time
-from typing import Any, Callable, TypeAlias
+from typing import Any, Callable, Literal, TypeAlias
 
+import keras
 import numpy as np
 import tensorflow as tf
 from numpy.typing import NDArray
@@ -12,8 +16,10 @@ IMAGE_HEIGHT = 28
 IMAGE_WIDTH = 28
 N_FEATURES = IMAGE_HEIGHT * IMAGE_WIDTH
 N_CLASSES = 10
-N_EPOCHS = 5
+HIDDEN_SIZE = 512
 BATCH_SIZE = 128
+EPOCHS = 5
+LEARNING_RATE = 0.001  # 1e-3
 
 F32Array: TypeAlias = NDArray[np.float32]
 U8Array: TypeAlias = NDArray[np.uint8]
@@ -52,6 +58,55 @@ def elapsed_time(func: Callable[[], Any]) -> float:
     start = time.perf_counter()
     _ = func()
     return time.perf_counter() - start
+
+
+def ceil_div(m: int, n: int) -> int:
+    return -(-m // n)
+
+
+def shuffle_in_unison(x: tf.Tensor, y: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+    indices = tf.random.shuffle(tf.range(len(x)))
+    return tf.gather(x, indices), tf.gather(y, indices)
+
+
+def set_random_seed_for(
+    library: Literal["python", "numpy", "tensorflow", "keras"],
+    seed: int | None,
+) -> None:
+    if seed is None:
+        return
+    match library:
+        case "python":
+            random.seed(seed)
+        case "numpy":
+            np.random.seed(seed)
+        case "tensorflow":
+            tf.random.set_seed(seed)
+        case "keras":
+            keras.utils.set_random_seed(seed)
+        case _:
+            raise ValueError(f"unknown library: {library!r}")
+
+
+def tf_set_log_level(level: int | None = None, *, argv_index: int = 1, default_level: int = 0) -> None:
+    """
+    Set the TensorFlow C++ backend log level via the `TF_CPP_MIN_LOG_LEVEL` environment variable.
+
+    Levels:
+        0: Show all logs (default)
+        1: Filter out INFO logs
+        2: Filter out INFO and WARNING logs
+        3: Filter out INFO, WARNING, and ERROR logs
+    """
+
+    if level is None:
+        try:
+            level = int(sys.argv[argv_index])
+        except (IndexError, ValueError):
+            level = int(os.getenv("TF_CPP_MIN_LOG_LEVEL", default=str(default_level)))
+
+    level = min(3, max(0, level))
+    os.environ["TF_CPP_MIN_LOG_LEVEL"] = str(level)
 
 
 def tf_debug_log(*, enabled: bool = True):

@@ -2,36 +2,34 @@
 from __future__ import annotations
 
 import numpy as np
-from numpy.random import RandomState
 from sklearn.neural_network import MLPClassifier
 
-from common import LEARNING_RATE, N_CLASSES, N_EPOCHS, N_FEATURES
+from common import EPOCHS, LEARNING_RATE, N_CLASSES, N_FEATURES
 from common import F32Array, U8Array, elapsed_time, load_data, preprocess_data
 from nn_protocol import Background, Evaluation
 
 
 class NeuralNetwork:
-    def __init__(self, *, random_state: int | RandomState | None = None) -> None:
-        (self._x_train, self._y_train), (self._x_test, self._y_test) = load_data()
+    def __init__(self, *, seed: int | None = None) -> None:
+        (self._x_train, self._y_train), (self._x_test, self._y_test) = load_data(seed=seed)
 
         self._model = MLPClassifier(
             hidden_layer_sizes=(3,),
             activation="relu",
-            solver="sgd",  # mini-batch SGD with batch size `min(200, n_samples)`
-            max_iter=N_EPOCHS,
+            solver="sgd",  # mini-batch SGD with batch size `min(n_samples, 200)`
             learning_rate_init=float(LEARNING_RATE),
-            random_state=random_state,
+            max_iter=EPOCHS,
+            random_state=seed,
         )
 
+    @property
     def weights(self) -> list[F32Array] | None:
         try:
-            return self._model.coefs_
-        except AttributeError:
-            return None
-
-    def biases(self) -> list[F32Array] | None:
-        try:
-            return self._model.intercepts_
+            return [
+                x
+                for w, b in zip(self._model.coefs_, self._model.intercepts_, strict=True)
+                for x in (w, b)
+            ]
         except AttributeError:
             return None
 

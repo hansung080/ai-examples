@@ -33,7 +33,11 @@ if prompt := st.chat_input():
     client: OpenAI = OpenAI(api_key=openai_api_key)
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
-    response: ChatCompletion = client.chat.completions.create(model=gpt_model, messages=st.session_state.messages)
+
+    response: ChatCompletion = client.chat.completions.create(
+        messages=st.session_state.messages,
+        model=gpt_model,
+    )
     content: str | None = response.choices[0].message.content
     st.session_state.messages.append({"role": "assistant", "content": content})
     st.chat_message("assistant").write(content)

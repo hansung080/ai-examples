@@ -22,7 +22,7 @@ def sigmoid(z: Expr) -> Expr:
 x, y, w1, b1, z1, a1, w2, b2, z2, a2 = sp.symbols("x y w1 b1 z1 a1 w2 b2 z2 a2")
 
 # dL/dA2
-loss = (a2 - y) ** 2
+loss = (y - a2) ** 2
 dl_da2 = sp.diff(loss, a2)
 assert dl_da2 == 2 * a2 - 2 * y
 

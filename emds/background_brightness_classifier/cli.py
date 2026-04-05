@@ -29,7 +29,7 @@ def select_neural_network() -> tuple[NeuralNetworkProtocol, str]:
         case "1" | "nn_from_scratch":
             return ScratchNeuralNetwork(seed=42), "nn_from_scratch"
         case "2" | "nn_sklearn":
-            return SklearnNeuralNetwork(random_state=42), "nn_sklearn"
+            return SklearnNeuralNetwork(seed=42), "nn_sklearn"
         case _:
             print(f"error: unknown neural network: {user_input!r}", file=sys.stderr)
             sys.exit(1)

@@ -16,11 +16,12 @@ while True:
         break
 
     response: ChatCompletion = client.chat.completions.create(
-        model=GPT_MODEL,
-        temperature=0.9,
         messages=[
             {"role": "system", "content": "너는 사용자를 도와주는 상담사야."},
             {"role": "user", "content": user_input},
         ],
+        model=GPT_MODEL,
+        temperature=0.9,
     )
+
     print("AI> " + response.choices[0].message.content)

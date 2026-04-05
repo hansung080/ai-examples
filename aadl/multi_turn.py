@@ -11,9 +11,9 @@ client: OpenAI = OpenAI(api_key=OPENAI_API_KEY)
 
 def get_ai_response(messages: list[ChatCompletionMessageParam]) -> str:
     response: ChatCompletion = client.chat.completions.create(
+        messages=messages,
         model=GPT_MODEL,
         temperature=0.9,
-        messages=messages,
     )
     return response.choices[0].message.content
 
