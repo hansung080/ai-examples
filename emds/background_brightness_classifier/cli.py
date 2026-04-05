@@ -14,11 +14,15 @@ class FontColorRecommender:
         self.nn = nn
 
     def recommend(self, r: int, g: int, b: int) -> str:
-        match self.nn.predict_one(r, g, b):
+        background = self.nn.predict_one(r, g, b)
+        match background:
             case Background.DARK:
-                return f"WHITE font recommended on dark background ({r}, {g}, {b})"
+                font = "WHITE"
             case Background.LIGHT:
-                return f"BLACK font recommended on light background ({r}, {g}, {b})"
+                font = "BLACK"
+            case _:
+                raise ValueError(f"unknown background: {background!r}")
+        return f"{font} font recommended on {background.name.lower()} background ({r}, {g}, {b})"
 
 
 def select_neural_network() -> tuple[NeuralNetworkProtocol, str]:
