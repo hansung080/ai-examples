@@ -25,14 +25,14 @@ class NaiveDense:
                 minval=0,
                 maxval=0.1,
                 dtype=tf.float32,
-            )
+            ),
         )
 
         self._b = tf.Variable(
             tf.zeros(
                 (output_size,),
                 dtype=tf.float32,
-            )
+            ),
         )
 
     @property
@@ -177,30 +177,30 @@ class NeuralNetwork:
         inputs = tf.convert_to_tensor(self._test_images)
         targets = tf.convert_to_tensor(self._test_labels, dtype=tf.int32)
 
-        outputs = self._model(inputs)
-        loss = self._model.compute_loss(targets, outputs)
-        predictions = tf.argmax(outputs, axis=1, output_type=tf.int32)
-        accuracy = tf.reduce_mean(tf.cast(predictions == targets, tf.float32))
+        probs = self._model(inputs)
+        loss = self._model.compute_loss(targets, probs)
+        preds = tf.argmax(probs, axis=1, output_type=tf.int32)
+        accuracy = tf.reduce_mean(tf.cast(preds == targets, tf.float32))
         return Evaluation(float(loss.numpy()), float(accuracy.numpy()))
 
-    def predict_proba(self, images: U8Array) -> F32Array:
+    def predict_probs(self, images: U8Array) -> F32Array:
         assert images.ndim == 3 and images.shape[1] == IMAGE_HEIGHT and images.shape[2] == IMAGE_WIDTH
         images: F32Array = preprocess_data(images)
-        probabilities: tf.Tensor = self._model(tf.convert_to_tensor(images))
-        assert probabilities.shape == (images.shape[0], N_CLASSES)
-        return probabilities.numpy()
+        probs: tf.Tensor = self._model(tf.convert_to_tensor(images))
+        assert probs.shape == (images.shape[0], N_CLASSES)
+        return probs.numpy()
 
     def predict(self, images: U8Array) -> U8Array:
-        probabilities: F32Array = self.predict_proba(images)
-        predictions: U8Array = np.argmax(probabilities, axis=1).astype(np.uint8)
-        assert predictions.shape == (images.shape[0],)
-        return predictions
+        probs: F32Array = self.predict_probs(images)
+        preds: U8Array = np.argmax(probs, axis=1).astype(np.uint8)
+        assert preds.shape == (images.shape[0],)
+        return preds
 
     def predict_one(self, image: U8Array) -> Digit:
         assert image.shape == (IMAGE_HEIGHT, IMAGE_WIDTH)
         # `image.reshape((1, image.shape[0], image.shape[1]))` or `np.expand_dims(image, axis=0)` can be an alternative.
-        predictions: U8Array = self.predict(image[np.newaxis, ...])  # or `image[None, :, :]`
-        return Digit(predictions[0])
+        preds: U8Array = self.predict(image[np.newaxis, ...])  # or `image[None, :, :]`
+        return Digit(preds[0])
 
 
 if __name__ == "__main__":

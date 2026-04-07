@@ -41,12 +41,12 @@ class NeuralNetwork:
         accuracy: float = self._model.score(self._x_test, self._y_test)
         return Evaluation(accuracy)
 
-    def predict_proba(self, colors: U8Array | F32Array) -> F32Array:
+    def predict_probs(self, colors: U8Array | F32Array) -> F32Array:
         assert colors.ndim == 2 and colors.shape[1] == N_FEATURES
         x: F32Array = preprocess_data(colors)
-        y_proba: F32Array = self._model.predict_proba(x)
-        assert y_proba.shape == (colors.shape[0], N_CLASSES)
-        return y_proba
+        y_prob: F32Array = self._model.predict_proba(x)
+        assert y_prob.shape == (colors.shape[0], N_CLASSES)
+        return y_prob
 
     def predict(self, colors: U8Array | F32Array) -> U8Array:
         assert colors.ndim == 2 and colors.shape[1] == N_FEATURES

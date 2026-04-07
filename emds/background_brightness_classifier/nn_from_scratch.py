@@ -99,29 +99,29 @@ class NeuralNetwork:
             self._b2 -= LEARNING_RATE * dl_db2
 
     def evaluate(self) -> Evaluation:
-        y_proba: F32Array = self._forward_pass(self._x_test)[3]
-        y_pred: U8Array = (y_proba >= CLASSIFICATION_THRESHOLD).flatten().astype(np.uint8)
+        y_prob: F32Array = self._forward_pass(self._x_test)[3]
+        y_pred: U8Array = (y_prob >= CLASSIFICATION_THRESHOLD).flatten().astype(np.uint8)
         correct_mask: BoolArray = np.equal(y_pred, self._y_test)
         accuracy: np.float32 = np.mean(correct_mask)
         return Evaluation(float(accuracy))
 
-    def predict_proba(self, colors: U8Array | F32Array) -> F32Array:
+    def predict_probs(self, colors: U8Array | F32Array) -> F32Array:
         assert colors.ndim == 2 and colors.shape[1] == N_FEATURES
         x: F32Array = preprocess_data(colors)
-        y_proba: F32Array = self._forward_pass(x)[3]
+        y_prob: F32Array = self._forward_pass(x)[3]
 
-        # `np.concatenate((ONE - y_proba, y_proba), axis=1)` can be an alternative to `np.hstack(...)`.
-        y_proba: F32Array = np.hstack((ONE - y_proba, y_proba))
-        assert y_proba.shape == (colors.shape[0], N_CLASSES)
-        return y_proba
+        # `np.concatenate((ONE - y_prob, y_prob), axis=1)` can be an alternative to `np.hstack(...)`.
+        y_prob: F32Array = np.hstack((ONE - y_prob, y_prob))
+        assert y_prob.shape == (colors.shape[0], N_CLASSES)
+        return y_prob
 
     def predict(self, colors: U8Array | F32Array) -> U8Array:
-        y_proba: F32Array = self.predict_proba(colors)
+        y_prob: F32Array = self.predict_probs(colors)
 
         # Binary classification:     sigmoid -> threshold
         # Multilabel classification: sigmoid -> threshold
-        # Multiclass classification: softmax -> argmax: `np.argmax(y_proba, axis=1).astype(np.uint8)`
-        y_pred: U8Array = (y_proba[:, 1] >= CLASSIFICATION_THRESHOLD).astype(np.uint8)
+        # Multiclass classification: softmax -> argmax: `np.argmax(y_prob, axis=1).astype(np.uint8)`
+        y_pred: U8Array = (y_prob[:, 1] >= CLASSIFICATION_THRESHOLD).astype(np.uint8)
         assert y_pred.shape == (colors.shape[0],)
         return y_pred
 
