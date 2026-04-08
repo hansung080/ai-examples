@@ -16,8 +16,8 @@ class NeuralNetwork:
         (self._train_images, self._train_labels), (self._test_images, self._test_labels) = load_data()
 
         self._model = keras.Sequential([
-            layers.Dense(units=HIDDEN_SIZE, activation="relu"),
-            layers.Dense(units=N_CLASSES, activation="softmax"),
+            layers.Dense(HIDDEN_SIZE, activation="relu"),
+            layers.Dense(N_CLASSES, activation="softmax"),
         ])
 
         self._model.compile(
@@ -63,7 +63,7 @@ class NeuralNetwork:
 
 
 if __name__ == "__main__":
-    set_random_seed_for(library="keras", seed=None)
+    set_random_seed_for("keras", seed=None)
     tf_set_log_level(argv_index=1, default_level=1)
 
     nn = NeuralNetwork()

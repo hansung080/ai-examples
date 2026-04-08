@@ -16,7 +16,7 @@ from nn_protocol import Digit, Evaluation
 
 
 class NaiveDense:
-    def __init__(self, input_size: int, output_size: int, activation: Callable[[tf.Tensor], tf.Tensor]) -> None:
+    def __init__(self, *, input_size: int, output_size: int, activation: Callable[[tf.Tensor], tf.Tensor]) -> None:
         self._activation = activation
 
         self._W = tf.Variable(
@@ -204,7 +204,7 @@ class NeuralNetwork:
 
 
 if __name__ == "__main__":
-    set_random_seed_for(library="tensorflow", seed=None)
+    set_random_seed_for("tensorflow", seed=None)
     tf_set_log_level(argv_index=1, default_level=1)
 
     nn = NeuralNetwork()
