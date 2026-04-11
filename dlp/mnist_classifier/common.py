@@ -4,7 +4,8 @@ import os
 import random
 import sys
 import time
-from typing import Any, Callable, Literal, TypeAlias
+from collections.abc import Iterable
+from typing import Any, Callable, Literal, Protocol, TypeAlias
 
 import keras
 import numpy as np
@@ -16,7 +17,7 @@ IMAGE_HEIGHT = 28
 IMAGE_WIDTH = 28
 N_FEATURES = IMAGE_HEIGHT * IMAGE_WIDTH
 N_CLASSES = 10
-HIDDEN_SIZE = 512
+HIDDEN_LAYER_SIZE = 512
 BATCH_SIZE = 128
 EPOCHS = 5
 LEARNING_RATE = 0.001  # 1e-3
@@ -111,3 +112,31 @@ def tf_set_log_level(level: int | None = None, *, argv_index: int = 1, default_l
 
 def tf_debug_log(*, enabled: bool = True):
     tf.debugging.set_log_device_placement(enabled)
+
+
+class SupportsWeights[T](Protocol):
+    @property
+    def weights(self) -> Iterable[T]: ...
+
+
+def flatten_weights1[T](layers: Iterable[SupportsWeights[T]]) -> list[T]:
+    weights = []
+    for layer in layers:
+        for w in layer.weights:
+            weights.append(w)
+    return weights
+
+
+def flatten_weights2[T](layers: Iterable[SupportsWeights[T]]) -> list[T]:
+    weights = []
+    for layer in layers:
+        weights.extend(layer.weights)  # weights += layer.weights
+    return weights
+
+
+def flatten_weights3[T](layers: Iterable[SupportsWeights[T]]) -> list[T]:
+    return [
+        w
+        for layer in layers
+        for w in layer.weights
+    ]

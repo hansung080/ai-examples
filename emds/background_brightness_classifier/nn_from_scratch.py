@@ -17,6 +17,7 @@ class NeuralNetwork:
         (self._x_train, self._y_train), (self._x_test, self._y_test) = load_data(seed=seed)
 
         self._rng = np.random.default_rng(seed)
+
         self._w1: F32Array = self._rng.random((3, 3), dtype=np.float32)
         self._b1: F32Array = self._rng.random((1, 3), dtype=np.float32)
         self._w2: F32Array = self._rng.random((3, 1), dtype=np.float32)

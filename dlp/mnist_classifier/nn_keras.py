@@ -5,7 +5,7 @@ import keras
 import numpy as np
 from keras import layers
 
-from common import BATCH_SIZE, EPOCHS, HIDDEN_SIZE, IMAGE_HEIGHT, IMAGE_WIDTH, N_CLASSES
+from common import BATCH_SIZE, EPOCHS, HIDDEN_LAYER_SIZE, IMAGE_HEIGHT, IMAGE_WIDTH, N_CLASSES
 from common import F32Array, U8Array
 from common import elapsed_time, load_data, load_raw_data, preprocess_data, set_random_seed_for, tf_set_log_level
 from nn_protocol import Digit, Evaluation
@@ -16,7 +16,7 @@ class NeuralNetwork:
         (self._train_images, self._train_labels), (self._test_images, self._test_labels) = load_data()
 
         self._model = keras.Sequential([
-            layers.Dense(HIDDEN_SIZE, activation="relu"),
+            layers.Dense(HIDDEN_LAYER_SIZE, activation="relu"),
             layers.Dense(N_CLASSES, activation="softmax"),
         ])
 

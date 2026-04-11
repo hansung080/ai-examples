@@ -8,20 +8,33 @@ import keras
 import numpy as np
 import tensorflow as tf
 
-from common import BATCH_SIZE, EPOCHS, HIDDEN_SIZE, IMAGE_HEIGHT, IMAGE_WIDTH, LEARNING_RATE, N_CLASSES, N_FEATURES
+from common import BATCH_SIZE, EPOCHS, HIDDEN_LAYER_SIZE, IMAGE_HEIGHT, IMAGE_WIDTH, LEARNING_RATE, N_CLASSES
 from common import F32Array, U8Array
-from common import ceil_div, elapsed_time, load_data, load_raw_data, preprocess_data, set_random_seed_for
-from common import shuffle_in_unison, tf_set_log_level
+from common import ceil_div, elapsed_time, flatten_weights3 as flatten_weights, load_data, load_raw_data
+from common import preprocess_data, set_random_seed_for, shuffle_in_unison, tf_set_log_level
 from nn_protocol import Digit, Evaluation
 
 
 class NaiveDense:
-    def __init__(self, *, input_size: int, output_size: int, activation: Callable[[tf.Tensor], tf.Tensor]) -> None:
+    def __init__(self, units: int, *, activation: Callable[[tf.Tensor], tf.Tensor] | None = None) -> None:
+        self._units = units
         self._activation = activation
+        self._W: tf.Variable | None = None
+        self._b: tf.Variable | None = None
+        self._built = False
+
+    @property
+    def weights(self) -> list[tf.Variable]:
+        if not self._built:
+            raise ValueError("layer not built")
+        return [self._W, self._b]
+
+    def build(self, input_shape: Sequence[int | None] | tf.TensorShape) -> None:
+        input_dim = int(input_shape[-1])
 
         self._W = tf.Variable(
             tf.random.uniform(
-                (input_size, output_size),
+                (input_dim, self._units),  # (input_size, output_size)
                 minval=0,
                 maxval=0.1,
                 dtype=tf.float32,
@@ -30,27 +43,36 @@ class NaiveDense:
 
         self._b = tf.Variable(
             tf.zeros(
-                (output_size,),
+                (self._units,),  # (output_size,)
                 dtype=tf.float32,
             ),
         )
 
-    @property
-    def weights(self) -> list[tf.Variable]:
-        return [self._W, self._b]
+        self._built = True
+
+    def call(self, inputs: tf.Tensor) -> tf.Tensor:
+        outputs = inputs @ self._W + self._b
+        if self._activation is not None:
+            outputs = self._activation(outputs)
+        return outputs
 
     def __call__(self, inputs: tf.Tensor) -> tf.Tensor:
-        return self._activation(inputs @ self._W + self._b)
+        if not self._built:
+            self.build(inputs.shape)
+        return self.call(inputs)
 
 
 class NaiveSequential:
     def __init__(self, layers: Sequence[NaiveDense]) -> None:
         self._layers = list(layers)
-        self._optimizer = None
+        self._weights: list[tf.Variable] | None = None
+        self._optimizer: keras.optimizers.Optimizer | None = None
 
-        self._weights: list[tf.Variable] = []
-        for layer in self._layers:
-            self._weights.extend(layer.weights)
+    @property
+    def weights(self) -> list[tf.Variable]:
+        if self._weights is None:
+            self._weights = flatten_weights(self._layers)
+        return self._weights
 
     def compile(self, *, optimizer: Literal["sgd", "sgd_momentum", "rmsprop"] | None = None) -> None:
         match optimizer:
@@ -64,10 +86,6 @@ class NaiveSequential:
                 self._optimizer = None
             case _:
                 raise ValueError(f"unknown optimizer: {optimizer!r}")
-
-    @property
-    def weights(self) -> list[tf.Variable]:
-        return self._weights
 
     def __call__(self, inputs: tf.Tensor) -> tf.Tensor:
         x = inputs
@@ -84,11 +102,11 @@ class NaiveSequential:
         if self._optimizer is not None:
             self._optimizer.apply_gradients(
                 (g, w)
-                for g, w in zip(gradients, self._weights, strict=True)
+                for g, w in zip(gradients, self.weights, strict=True)
                 if g is not None
             )
         else:
-            for w, g in zip(self._weights, gradients, strict=True):
+            for w, g in zip(self.weights, gradients, strict=True):
                 if g is not None:
                     w.assign_sub(g * LEARNING_RATE)
 
@@ -96,7 +114,7 @@ class NaiveSequential:
         with tf.GradientTape() as tape:
             outputs = self(inputs)
             loss = self.compute_loss(targets, outputs)
-        gradients = tape.gradient(loss, self._weights)
+        gradients = tape.gradient(loss, self.weights)
         self._update_weights(gradients)
         return loss
 
@@ -153,8 +171,8 @@ class NeuralNetwork:
         (self._train_images, self._train_labels), (self._test_images, self._test_labels) = load_data()
 
         self._model = NaiveSequential([
-            NaiveDense(input_size=N_FEATURES, output_size=HIDDEN_SIZE, activation=tf.nn.relu),
-            NaiveDense(input_size=HIDDEN_SIZE, output_size=N_CLASSES, activation=tf.nn.softmax),
+            NaiveDense(HIDDEN_LAYER_SIZE, activation=tf.nn.relu),
+            NaiveDense(N_CLASSES, activation=tf.nn.softmax),
         ])
 
         self._model.compile(optimizer="rmsprop")
