@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, TypeAlias
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -19,9 +20,9 @@ ZERO = np.float32(0.0)
 ONE = np.float32(1.0)
 TWO = np.float32(2.0)
 
-F32Array: TypeAlias = NDArray[np.float32]
-U8Array: TypeAlias = NDArray[np.uint8]
-BoolArray: TypeAlias = NDArray[np.bool_]
+type F32Array = NDArray[np.float32]
+type U8Array = NDArray[np.uint8]
+type BoolArray = NDArray[np.bool_]
 
 
 def _load_raw_data() -> pd.DataFrame:

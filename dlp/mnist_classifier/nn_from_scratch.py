@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator, Sequence
-from typing import Callable, Literal, cast
+from typing import Literal, Protocol, cast, runtime_checkable
 
 import keras
 import numpy as np
@@ -14,14 +14,69 @@ from common import ceil_div, elapsed_time, flatten_weights3 as flatten_weights, 
 from common import preprocess_data, set_random_seed_for, shuffle_in_unison, tf_set_log_level
 from nn_protocol import Digit, Evaluation
 
+# Type aliases do not support runtime checks, so use a @runtime_checkable protocol instead.
+# ```
+# type ActivationFn = Callable[[tf.Tensor], tf.Tensor]
+# ```
+
+
+@runtime_checkable  # checks only method existence, not its signature
+class ActivationFn(Protocol):
+    def __call__(self, x: tf.Tensor) -> tf.Tensor: ...
+
+
+type ActivationLike = (
+    Literal["relu", "sigmoid", "softmax"]
+    | ActivationFn
+)
+
+type OptimizerLike = (
+    Literal["sgd", "sgd_momentum", "rmsprop"]
+    | keras.optimizers.Optimizer
+    | type[keras.optimizers.Optimizer]
+)
+
+
+@runtime_checkable
+class LossFn(Protocol):
+    def __call__(self, y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor: ...
+
+
+type LossLike = (
+    Literal[
+        "binary_crossentropy",
+        "categorical_crossentropy",
+        "sparse_categorical_crossentropy",
+        "mean_squared_error",
+        "mean_absolute_error",
+    ]
+    | LossFn
+)
+
 
 class NaiveDense:
-    def __init__(self, units: int, *, activation: Callable[[tf.Tensor], tf.Tensor] | None = None) -> None:
+    def __init__(self, units: int, *, activation: ActivationLike | None = None) -> None:
         self._units = units
-        self._activation = activation
+        self._activation_fn: ActivationFn | None = self._get_activation_fn(activation)
         self._W: tf.Variable | None = None
         self._b: tf.Variable | None = None
         self._built = False
+
+    @staticmethod
+    def _get_activation_fn(activation: ActivationLike | None) -> ActivationFn | None:
+        match activation:
+            case "relu":
+                return tf.nn.relu
+            case "sigmoid":
+                return tf.nn.sigmoid
+            case "softmax":
+                return tf.nn.softmax
+            case ActivationFn() as activation_fn:
+                return activation_fn
+            case None:
+                return None
+            case _:
+                raise ValueError(f"unknown activation: {activation!r}")
 
     @property
     def weights(self) -> list[tf.Variable]:
@@ -52,8 +107,8 @@ class NaiveDense:
 
     def call(self, inputs: tf.Tensor) -> tf.Tensor:
         outputs = inputs @ self._W + self._b
-        if self._activation is not None:
-            outputs = self._activation(outputs)
+        if self._activation_fn is not None:
+            outputs = self._activation_fn(outputs)
         return outputs
 
     def __call__(self, inputs: tf.Tensor) -> tf.Tensor:
@@ -67,6 +122,7 @@ class NaiveSequential:
         self._layers = list(layers)
         self._weights: list[tf.Variable] | None = None
         self._optimizer: keras.optimizers.Optimizer | None = None
+        self._loss_fn: LossFn | None = None
 
     @property
     def weights(self) -> list[tf.Variable]:
@@ -74,18 +130,47 @@ class NaiveSequential:
             self._weights = flatten_weights(self._layers)
         return self._weights
 
-    def compile(self, *, optimizer: Literal["sgd", "sgd_momentum", "rmsprop"] | None = None) -> None:
+    def compile(self, *, optimizer: OptimizerLike | None = "rmsprop", loss: LossLike | None = None) -> None:
+        self._optimizer = self._get_optimizer(optimizer)
+        self._loss_fn = self._get_loss_fn(loss)
+
+    @staticmethod
+    def _get_optimizer(optimizer: OptimizerLike | None) -> keras.optimizers.Optimizer | None:
         match optimizer:
             case "sgd":
-                self._optimizer = keras.optimizers.SGD(learning_rate=LEARNING_RATE)
+                return keras.optimizers.SGD(learning_rate=LEARNING_RATE)
             case "sgd_momentum":
-                self._optimizer = keras.optimizers.SGD(learning_rate=LEARNING_RATE * 0.7, momentum=0.9)
+                return keras.optimizers.SGD(learning_rate=LEARNING_RATE * 0.7, momentum=0.9)
             case "rmsprop":
-                self._optimizer = keras.optimizers.RMSprop(learning_rate=LEARNING_RATE)
+                return keras.optimizers.RMSprop(learning_rate=LEARNING_RATE)
+            case keras.optimizers.Optimizer() as opt:
+                return opt
+            case type() as opt_cls if issubclass(opt_cls, keras.optimizers.Optimizer):
+                return opt_cls()
             case None:
-                self._optimizer = None
+                return None
             case _:
                 raise ValueError(f"unknown optimizer: {optimizer!r}")
+
+    @staticmethod
+    def _get_loss_fn(loss: LossLike | None) -> LossFn | None:
+        match loss:
+            case "binary_crossentropy":
+                return keras.losses.binary_crossentropy
+            case "categorical_crossentropy":
+                return keras.losses.categorical_crossentropy
+            case "sparse_categorical_crossentropy":
+                return keras.losses.sparse_categorical_crossentropy
+            case "mean_squared_error":
+                return keras.losses.mean_squared_error
+            case "mean_absolute_error":
+                return keras.losses.mean_absolute_error
+            case LossFn() as loss_fn:
+                return loss_fn
+            case None:
+                return None
+            case _:
+                raise ValueError(f"unknown activation: {loss!r}")
 
     def __call__(self, inputs: tf.Tensor) -> tf.Tensor:
         x = inputs
@@ -93,9 +178,10 @@ class NaiveSequential:
             x = layer(x)
         return x
 
-    @staticmethod
-    def compute_loss(targets: tf.Tensor, outputs: tf.Tensor) -> tf.Tensor:
-        per_sample_losses = keras.losses.sparse_categorical_crossentropy(targets, outputs)
+    def compute_loss(self, targets: tf.Tensor, outputs: tf.Tensor) -> tf.Tensor:
+        if self._loss_fn is None:
+            raise ValueError("loss function not provided")
+        per_sample_losses = self._loss_fn(targets, outputs)
         return tf.reduce_mean(per_sample_losses)
 
     def _update_weights(self, gradients: Sequence[tf.Tensor | None]) -> None:
@@ -110,7 +196,8 @@ class NaiveSequential:
                 if g is not None:
                     w.assign_sub(g * LEARNING_RATE)
 
-    def _one_training_step(self, inputs: tf.Tensor, targets: tf.Tensor) -> tf.Tensor:
+    @tf.function  # switches from eager execution to graph execution for better performance
+    def _train_step(self, inputs: tf.Tensor, targets: tf.Tensor) -> tf.Tensor:
         with tf.GradientTape() as tape:
             outputs = self(inputs)
             loss = self.compute_loss(targets, outputs)
@@ -134,7 +221,7 @@ class NaiveSequential:
             batches = BatchIterator(inputs_epoch, targets_epoch, batch_size)
             batch, loss = -1, 0.0
             for batch, (inputs_batch, targets_batch) in enumerate(batches):
-                loss = self._one_training_step(inputs_batch, targets_batch)
+                loss = self._train_step(inputs_batch, targets_batch)
             if verbose:
                 print(f"epoch {epoch + 1}/{epochs}, batch {batch + 1}/{len(batches)} => loss: {loss:.4f}")
 
@@ -171,11 +258,14 @@ class NeuralNetwork:
         (self._train_images, self._train_labels), (self._test_images, self._test_labels) = load_data()
 
         self._model = NaiveSequential([
-            NaiveDense(HIDDEN_LAYER_SIZE, activation=tf.nn.relu),
-            NaiveDense(N_CLASSES, activation=tf.nn.softmax),
+            NaiveDense(HIDDEN_LAYER_SIZE, activation="relu"),
+            NaiveDense(N_CLASSES, activation="softmax"),
         ])
 
-        self._model.compile(optimizer="rmsprop")
+        self._model.compile(
+            optimizer="rmsprop",
+            loss="sparse_categorical_crossentropy",
+        )
 
     @property
     def weights(self) -> list[F32Array]:

@@ -59,7 +59,7 @@ class NeuralNetwork:
         dl_db1 = dl_da1 @ da1_dz1.T * dz1_db1  # (1, 1) = (1, 3) @ (3, 1) * 1
         return dl_dw1.T, dl_db1, dl_dw2.T, dl_db2
 
-    # <<< [Stochastic] Gradient Descent >>>
+    # === [Stochastic] Gradient Descent ===
     #
     # 1. SGD (Online SGD [with/without Replacement]) - batch_size: 1
     #   - Each sample updates the weights using its gradient.
@@ -119,9 +119,9 @@ class NeuralNetwork:
     def predict(self, colors: U8Array | F32Array) -> U8Array:
         y_prob: F32Array = self.predict_probs(colors)
 
-        # Binary classification:     sigmoid -> threshold
-        # Multilabel classification: sigmoid -> threshold
-        # Multiclass classification: softmax -> argmax: `np.argmax(y_prob, axis=1).astype(np.uint8)`
+        # binary classification:      sigmoid -> threshold
+        # multiclass classification:  softmax -> argmax: `np.argmax(y_prob, axis=1).astype(np.uint8)`
+        # multi-label classification: sigmoid -> threshold
         y_pred: U8Array = (y_prob[:, 1] >= CLASSIFICATION_THRESHOLD).astype(np.uint8)
         assert y_pred.shape == (colors.shape[0],)
         return y_pred
