@@ -61,15 +61,15 @@ class NeuralNetwork:
 
     # === [Stochastic] Gradient Descent ===
     #
-    # 1. SGD (Online SGD [with/without Replacement]) - batch_size: 1
+    # Online SGD (batch_size = 1):
     #   - Each sample updates the weights using its gradient.
     #   - Weight updates: epochs * n_samples (without replacement), steps (with replacement)
     #
-    # 2. Mini-batch SGD - batch_size: 2 ~ n_samples - 1
+    # Mini-batch SGD (1 < batch_size < n_samples):
     #   - Each batch updates the weights using the gradient averaged over the batch.
     #   - Weight updates: epochs * n_batches => epochs * ceil(n_samples / batch_size)
     #
-    # 3. Batch GD (Full-batch GD) - batch_size: n_samples
+    # Full-batch GD (batch_size = n_samples):
     #   - Each epoch updates the weights using the gradient averaged over the entire dataset.
     #   - Weight updates: epochs
     #
@@ -131,8 +131,12 @@ class NeuralNetwork:
         return Background(y_pred[0])
 
 
-if __name__ == "__main__":
+def _run() -> None:
     nn = NeuralNetwork()
     train_time = elapsed_time(nn.train)
     evaluation = nn.evaluate()
     print(f"TRAIN TIME: {train_time:.2f}s, ACCURACY: {evaluation.accuracy:.2%}")
+
+
+if __name__ == "__main__":
+    _run()

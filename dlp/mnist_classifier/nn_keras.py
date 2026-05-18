@@ -62,7 +62,7 @@ class NeuralNetwork:
         return Digit(preds[0])
 
 
-if __name__ == "__main__":
+def _run() -> None:
     set_random_seed_for("keras", seed=None)
     tf_set_log_level(argv_index=1, default_level=1)
 
@@ -73,3 +73,7 @@ if __name__ == "__main__":
 
     _, (test_images, test_labels) = load_raw_data()
     assert nn.predict_one(test_images[0]) == test_labels[0]
+
+
+if __name__ == "__main__":
+    _run()

@@ -60,8 +60,12 @@ class NeuralNetwork:
         return Background(y_pred[0])
 
 
-if __name__ == "__main__":
+def _run() -> None:
     nn = NeuralNetwork()
     train_time = elapsed_time(nn.train)
     evaluation = nn.evaluate()
     print(f"TRAIN TIME: {train_time:.2f}s, ACCURACY: {evaluation.accuracy:.2%}")
+
+
+if __name__ == "__main__":
+    _run()
