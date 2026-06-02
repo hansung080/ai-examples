@@ -29,8 +29,8 @@ else
   if ((COUNT == 0)); then
     echo "There are no .py[i] files in directory '$PROJECT_ROOT'"
   elif ((COUNT == 1)); then
-    echo "${S_BOLD}Success: no issues found in $COUNT source file${S_RESET}"
+    echo "${S_BOLD}Success: no issues found in $COUNT source file$S_RESET"
   else
-    echo "${S_BOLD}Success: no issues found in $COUNT source files${S_RESET}"
+    echo "${S_BOLD}Success: no issues found in $COUNT source files$S_RESET"
   fi
 fi
