@@ -1,0 +1,4 @@
+mypy==2.1.0
+pandas-stubs==3.0.0.260204
+scikit-learn-stubs==0.0.3
+types-tensorflow==2.18.0.20260518

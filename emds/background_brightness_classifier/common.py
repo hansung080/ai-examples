@@ -3,7 +3,7 @@ from __future__ import annotations
 import time
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -65,7 +65,7 @@ def sigmoid(x: F32Array) -> F32Array:
 
 def d_sigmoid(x: F32Array) -> F32Array:
     exp_neg_x = np.exp(-x)
-    return exp_neg_x / (ONE + exp_neg_x) ** TWO
+    return cast(F32Array, exp_neg_x / (ONE + exp_neg_x) ** TWO)
 
 
 def elapsed_time(func: Callable[[], Any]) -> float:

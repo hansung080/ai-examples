@@ -1,7 +1,9 @@
 #!../../.venv/bin/python
 from __future__ import annotations
 
-import keras
+from typing import cast
+
+import keras  # type: ignore[import-untyped]
 import numpy as np
 from keras import layers
 
@@ -28,7 +30,7 @@ class NeuralNetwork:
 
     @property
     def weights(self) -> list[F32Array]:
-        return self._model.get_weights()
+        return cast(list[F32Array], self._model.get_weights())
 
     # In this mini-batch SGD, 2345 (= 5 * ceil(60000 / 128)) weight updates are performed.
     def train(self) -> None:
@@ -45,8 +47,8 @@ class NeuralNetwork:
 
     def predict_probs(self, images: U8Array) -> F32Array:
         assert images.ndim == 3 and images.shape[1] == IMAGE_HEIGHT and images.shape[2] == IMAGE_WIDTH
-        images: F32Array = preprocess_data(images)
-        probs: F32Array = self._model.predict(images)
+        images_f32: F32Array = preprocess_data(images)
+        probs: F32Array = self._model.predict(images_f32)
         assert probs.shape == (images.shape[0], N_CLASSES)
         return probs
 

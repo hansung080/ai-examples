@@ -38,8 +38,8 @@ class NeuralNetwork:
         self._model.fit(self._x_train, self._y_train)
 
     def evaluate(self) -> Evaluation:
-        accuracy: float = self._model.score(self._x_test, self._y_test)
-        return Evaluation(accuracy)
+        accuracy = self._model.score(self._x_test, self._y_test)
+        return Evaluation(float(accuracy))
 
     def predict_probs(self, colors: U8Array | F32Array) -> F32Array:
         assert colors.ndim == 2 and colors.shape[1] == N_FEATURES

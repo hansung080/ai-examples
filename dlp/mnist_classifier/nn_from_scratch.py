@@ -4,14 +4,14 @@ from __future__ import annotations
 from collections.abc import Iterator, Sequence
 from typing import Literal, Protocol, cast, runtime_checkable
 
-import keras
+import keras  # type: ignore[import-untyped]
 import numpy as np
 import tensorflow as tf
 
 from common import BATCH_SIZE, EPOCHS, HIDDEN_LAYER_SIZE, IMAGE_HEIGHT, IMAGE_WIDTH, LEARNING_RATE, N_CLASSES
 from common import F32Array, U8Array
 from common import ceil_div, elapsed_time, flatten_weights3 as flatten_weights, load_data, load_raw_data
-from common import preprocess_data, set_random_seed_for, shuffle_in_unison, tf_set_log_level, to_one_hot
+from common import preprocess_data, set_random_seed_for, shuffle_in_unison, tf_set_log_level, to_one_hot, typed
 from nn_protocol import Digit, Evaluation
 
 # Type aliases do not support runtime checks, so use a @runtime_checkable protocol instead.
@@ -22,7 +22,7 @@ from nn_protocol import Digit, Evaluation
 
 @runtime_checkable  # checks only method existence, not its signature
 class ActivationFn(Protocol):
-    def __call__(self, x: tf.Tensor) -> tf.Tensor: ...
+    def __call__(self, x: tf.Tensor, /) -> tf.Tensor: ...
 
 
 type ActivationLike = (
@@ -39,7 +39,7 @@ type OptimizerLike = (
 
 @runtime_checkable
 class LossFn(Protocol):
-    def __call__(self, y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor: ...
+    def __call__(self, y_true: tf.Tensor, y_pred: tf.Tensor, /) -> tf.Tensor: ...
 
 
 type LossLike = (
@@ -66,11 +66,11 @@ class NaiveDense:
     def _get_activation_fn(activation: ActivationLike | None) -> ActivationFn | None:
         match activation:
             case "relu":
-                return tf.nn.relu
+                return cast(ActivationFn, tf.nn.relu)
             case "sigmoid":
-                return tf.nn.sigmoid
+                return cast(ActivationFn, tf.nn.sigmoid)
             case "softmax":
-                return tf.nn.softmax
+                return cast(ActivationFn, tf.nn.softmax)
             case ActivationFn() as activation_fn:
                 return activation_fn
             case None:
@@ -82,9 +82,13 @@ class NaiveDense:
     def weights(self) -> list[tf.Variable]:
         if not self._built:
             raise ValueError("layer not built")
+        assert self._W is not None and self._b is not None
         return [self._W, self._b]
 
     def build(self, input_shape: Sequence[int | None] | tf.TensorShape) -> None:
+        if input_shape[-1] is None:
+            raise ValueError("input_shape[-1] cannot be None")
+
         input_dim = int(input_shape[-1])
 
         self._W = tf.Variable(
@@ -106,6 +110,7 @@ class NaiveDense:
         self._built = True
 
     def call(self, inputs: tf.Tensor) -> tf.Tensor:
+        assert self._W is not None and self._b is not None
         outputs = inputs @ self._W + self._b
         if self._activation_fn is not None:
             outputs = self._activation_fn(outputs)
@@ -162,15 +167,15 @@ class NaiveSequential:
     def _get_loss_fn(loss: LossLike | None) -> LossFn | None:
         match loss:
             case "binary_crossentropy":
-                return keras.losses.binary_crossentropy
+                return cast(LossFn, keras.losses.binary_crossentropy)
             case "categorical_crossentropy":
-                return keras.losses.categorical_crossentropy
+                return cast(LossFn, keras.losses.categorical_crossentropy)
             case "sparse_categorical_crossentropy":
-                return keras.losses.sparse_categorical_crossentropy
+                return cast(LossFn, keras.losses.sparse_categorical_crossentropy)
             case "mean_squared_error":
-                return keras.losses.mean_squared_error
+                return cast(LossFn, keras.losses.mean_squared_error)
             case "mean_absolute_error":
-                return keras.losses.mean_absolute_error
+                return cast(LossFn, keras.losses.mean_absolute_error)
             case LossFn() as loss_fn:
                 return loss_fn
             case None:
@@ -200,12 +205,12 @@ class NaiveSequential:
                 if g is not None:
                     w.assign_sub(g * LEARNING_RATE)
 
-    @tf.function  # switches from eager execution to graph execution for better performance
+    @typed(tf.function)  # or @tf_typed_function switches from eager execution to graph execution for performance.
     def _train_step(self, inputs: tf.Tensor, targets: tf.Tensor) -> tf.Tensor:
         with tf.GradientTape() as tape:
             outputs = self(inputs)
             loss = self.compute_loss(targets, outputs)
-        gradients = tape.gradient(loss, self.weights)
+        gradients = cast(list[tf.Tensor | None], tape.gradient(loss, self.weights))
         self._update_weights(gradients)
         return loss
 
@@ -223,7 +228,7 @@ class NaiveSequential:
         for epoch in range(epochs):
             inputs_epoch, targets_epoch = shuffle_in_unison(inputs, targets) if shuffle else (inputs, targets)
             batches = BatchIterator(inputs_epoch, targets_epoch, batch_size)
-            batch, loss = -1, 0.0
+            batch, loss = -1, tf.constant(0.0)
             for batch, (inputs_batch, targets_batch) in enumerate(batches):
                 loss = self._train_step(inputs_batch, targets_batch)
             if verbose:
@@ -313,9 +318,9 @@ class NeuralNetwork:
 
     def predict_probs(self, images: U8Array) -> F32Array:
         assert images.ndim == 3 and images.shape[1] == IMAGE_HEIGHT and images.shape[2] == IMAGE_WIDTH
-        images: F32Array = preprocess_data(images)
-        probs: tf.Tensor = self._model(tf.convert_to_tensor(images))
-        assert probs.shape == (images.shape[0], N_CLASSES)
+        images_f32: F32Array = preprocess_data(images)
+        probs: tf.Tensor = self._model(tf.convert_to_tensor(images_f32))
+        assert tuple(probs.shape) == (images.shape[0], N_CLASSES)
         return probs.numpy()
 
     def predict(self, images: U8Array) -> U8Array:

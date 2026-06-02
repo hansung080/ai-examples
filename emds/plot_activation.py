@@ -7,8 +7,8 @@ from dataclasses import dataclass
 from typing import Self
 
 import matplotlib as mpl
-import sympy as sp
-from matplotlib.backends import BackendFilter, backend_registry
+import sympy as sp  # type: ignore[import-untyped]
+from matplotlib.backends import BackendFilter, backend_registry  # type: ignore[attr-defined]
 from pathlib import Path
 
 ALLOWED_ACTIVATIONS = ("relu", "sigmoid")
@@ -45,7 +45,9 @@ class Args:
 
 
 def is_interactive_backend() -> bool:
-    return mpl.get_backend() in backend_registry.list_builtin(BackendFilter.INTERACTIVE)
+    return mpl.get_backend() in backend_registry.list_builtin(  # type: ignore[no-untyped-call]
+        BackendFilter.INTERACTIVE,
+    )
 
 
 def ensure_interactive_backend() -> None:

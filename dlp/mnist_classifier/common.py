@@ -5,13 +5,14 @@ import random
 import sys
 import time
 from collections.abc import Callable, Iterable, Sequence
-from typing import Any, Literal, Protocol
+from typing import Any, Literal, Protocol, cast, overload
 
-import keras
+import keras  # type: ignore[import-untyped]
 import numpy as np
 import tensorflow as tf
 from numpy.typing import NDArray
-from keras.datasets import mnist  # Use `keras` for Keras >= 3, or use `tensorflow.keras` for Keras < 3
+# Use `keras` for Keras >= 3, or use `tensorflow.keras` for Keras < 3
+from keras.datasets import mnist  # type: ignore[import-untyped]
 
 IMAGE_HEIGHT = 28
 IMAGE_WIDTH = 28
@@ -49,10 +50,10 @@ def preprocess_data(images: U8Array) -> F32Array:
 
 
 def load_data() -> tuple[tuple[F32Array, U8Array], tuple[F32Array, U8Array]]:
-    (train_images, train_labels), (test_images, test_labels) = load_raw_data()
-    train_images = preprocess_data(train_images)
-    test_images = preprocess_data(test_images)
-    return (train_images, train_labels), (test_images, test_labels)
+    (train_images_u8, train_labels), (test_images_u8, test_labels) = load_raw_data()
+    train_images_f32 = preprocess_data(train_images_u8)
+    test_images_f32 = preprocess_data(test_images_u8)
+    return (train_images_f32, train_labels), (test_images_f32, test_labels)
 
 
 def elapsed_time(func: Callable[[], Any]) -> float:
@@ -68,6 +69,112 @@ def ceil_div(m: int, n: int) -> int:
 def shuffle_in_unison(x: tf.Tensor, y: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
     indices = tf.random.shuffle(tf.range(len(x)))
     return tf.gather(x, indices), tf.gather(y, indices)
+
+
+class SupportsWeights[T](Protocol):
+    @property
+    def weights(self) -> Iterable[T]: ...
+
+
+def flatten_weights1[T](layers: Iterable[SupportsWeights[T]]) -> list[T]:
+    weights: list[T] = []
+    for layer in layers:
+        for w in layer.weights:
+            weights.append(w)
+    return weights
+
+
+def flatten_weights2[T](layers: Iterable[SupportsWeights[T]]) -> list[T]:
+    weights: list[T] = []
+    for layer in layers:
+        weights.extend(layer.weights)  # weights += layer.weights
+    return weights
+
+
+def flatten_weights3[T](layers: Iterable[SupportsWeights[T]]) -> list[T]:
+    return [
+        w
+        for layer in layers
+        for w in layer.weights
+    ]
+
+
+type IntSequence = Sequence[int]
+type IntSequenceLike = IntSequence | NDArray[np.integer[Any]]
+type IntSequences = Sequence[IntSequence]
+
+
+@overload
+def to_multi_hot(
+    sequences: IntSequences,
+    *,
+    dimension: int = ...,
+) -> F32Array: ...
+
+
+@overload
+def to_multi_hot[ScalarType: np.generic](
+    sequences: IntSequences,
+    *,
+    dimension: int = ...,
+    dtype: type[ScalarType] = ...,
+) -> NDArray[ScalarType]: ...
+
+
+def to_multi_hot(
+    sequences: IntSequences,
+    *,
+    dimension: int = 10000,
+    dtype: type[np.generic] = np.float32,
+) -> NDArray[np.generic]:
+    """
+    Convert sequences of indices into multi-hot encoded vectors.
+    `dimension` is the vocabulary size (maximum index + 1).
+    """
+    vectors = np.zeros((len(sequences), dimension), dtype=dtype)
+    for i, sequence in enumerate(sequences):
+        for index in sequence:
+            vectors[i, index] = 1
+    return vectors
+
+
+vectorize_sequences = to_multi_hot
+
+
+@overload
+def to_one_hot(
+    labels: IntSequenceLike,
+    *,
+    dimension: int,
+) -> U8Array: ...
+
+
+@overload
+def to_one_hot[ScalarType: np.generic](
+    labels: IntSequenceLike,
+    *,
+    dimension: int,
+    dtype: type[ScalarType] = ...,
+) -> NDArray[ScalarType]: ...
+
+
+def to_one_hot(
+    labels: IntSequenceLike,
+    *,
+    dimension: int,
+    dtype: type[np.generic] = np.uint8,
+) -> NDArray[np.generic]:
+    """
+    Convert labels into one-hot encoded vectors.
+    `dimension` is the number of classes (maximum label + 1).
+    """
+    vectors = np.zeros((len(labels), dimension), dtype=dtype)
+    for i, label in enumerate(labels):
+        vectors[i, label] = 1
+    return vectors
+
+
+to_categorical = to_one_hot
 
 
 def set_random_seed_for(
@@ -109,72 +216,15 @@ def tf_set_log_level(level: int | None = None, *, argv_index: int = 1, default_l
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = str(level)
 
 
-def tf_debug_log(*, enabled: bool = True):
+def tf_debug_log(*, enabled: bool = True) -> None:
     tf.debugging.set_log_device_placement(enabled)
 
 
-class SupportsWeights[T](Protocol):
-    @property
-    def weights(self) -> Iterable[T]: ...
+def tf_typed_function[F: Callable[..., Any]](func: F) -> F:
+    return cast(F, tf.function(func))
 
 
-def flatten_weights1[T](layers: Iterable[SupportsWeights[T]]) -> list[T]:
-    weights = []
-    for layer in layers:
-        for w in layer.weights:
-            weights.append(w)
-    return weights
-
-
-def flatten_weights2[T](layers: Iterable[SupportsWeights[T]]) -> list[T]:
-    weights = []
-    for layer in layers:
-        weights.extend(layer.weights)  # weights += layer.weights
-    return weights
-
-
-def flatten_weights3[T](layers: Iterable[SupportsWeights[T]]) -> list[T]:
-    return [
-        w
-        for layer in layers
-        for w in layer.weights
-    ]
-
-
-def to_multi_hot[ScalarType: np.generic](
-    sequences: Sequence[Sequence[int]],
-    *,
-    dimension: int = 10000,
-    dtype: type[ScalarType] = np.float32,
-) -> NDArray[ScalarType]:
-    """
-    Convert sequences of indices into multi-hot encoded vectors.
-    `dimension` is the vocabulary size (maximum index + 1).
-    """
-    vectors = np.zeros((len(sequences), dimension), dtype=dtype)
-    for i, sequence in enumerate(sequences):
-        for index in sequence:
-            vectors[i, index] = 1
-    return vectors
-
-
-vectorize_sequences = to_multi_hot
-
-
-def to_one_hot[ScalarType: np.generic](
-    labels: Sequence[int],
-    *,
-    dimension: int,
-    dtype: type[ScalarType] = np.float32,
-) -> NDArray[ScalarType]:
-    """
-    Convert labels into one-hot encoded vectors.
-    `dimension` is the number of classes (maximum label + 1).
-    """
-    vectors = np.zeros((len(labels), dimension), dtype=dtype)
-    for i, label in enumerate(labels):
-        vectors[i, label] = 1
-    return vectors
-
-
-to_categorical = to_one_hot
+def typed[F: Callable[..., Any]](untyped_decorator: Any) -> Callable[[F], F]:
+    def decorator(func: F) -> F:
+        return cast(F, untyped_decorator(func))
+    return decorator

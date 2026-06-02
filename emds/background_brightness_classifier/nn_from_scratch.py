@@ -112,7 +112,7 @@ class NeuralNetwork:
         y_prob: F32Array = self._forward_pass(x)[3]
 
         # `np.concatenate((ONE - y_prob, y_prob), axis=1)` can be an alternative to `np.hstack(...)`.
-        y_prob: F32Array = np.hstack((ONE - y_prob, y_prob))
+        y_prob = np.hstack((ONE - y_prob, y_prob))
         assert y_prob.shape == (colors.shape[0], N_CLASSES)
         return y_prob
 

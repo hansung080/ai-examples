@@ -15,7 +15,9 @@ def get_ai_response(messages: list[ChatCompletionMessageParam]) -> str:
         model=GPT_MODEL,
         temperature=0.9,
     )
-    return response.choices[0].message.content
+    content: str | None = response.choices[0].message.content
+    assert content is not None
+    return content
 
 
 _messages: list[ChatCompletionMessageParam] = [

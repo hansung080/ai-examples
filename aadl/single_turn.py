@@ -24,4 +24,6 @@ while True:
         temperature=0.9,
     )
 
-    print("AI> " + response.choices[0].message.content)
+    content: str | None = response.choices[0].message.content
+    assert content is not None
+    print("AI> " + content)

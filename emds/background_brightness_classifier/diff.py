@@ -1,8 +1,8 @@
 #!../../.venv/bin/python
 from __future__ import annotations
 
-import sympy as sp
-from sympy.core.expr import Expr
+import sympy as sp  # type: ignore[import-untyped]
+from sympy.core.expr import Expr  # type: ignore[import-untyped]
 
 a, b = sp.symbols("a b")
 
