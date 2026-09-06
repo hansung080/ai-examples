@@ -67,7 +67,7 @@ class NeuralNetwork:
     #
     # Mini-batch SGD (1 < batch_size < n_samples):
     #   - Each batch updates the weights using the gradient averaged over the batch.
-    #   - Weight updates: epochs * n_batches => epochs * ceil(n_samples / batch_size)
+    #   - Weight updates: epochs * n_batches -> epochs * ceil(n_samples / batch_size)
     #
     # Full-batch GD (batch_size = n_samples):
     #   - Each epoch updates the weights using the gradient averaged over the entire dataset.
