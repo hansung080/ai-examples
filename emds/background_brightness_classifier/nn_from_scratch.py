@@ -59,25 +59,25 @@ class NeuralNetwork:
         dl_db1 = dl_da1 @ da1_dz1.T * dz1_db1  # (1, 1) = (1, 3) @ (3, 1) * 1
         return dl_dw1.T, dl_db1, dl_dw2.T, dl_db2
 
-    # === [Stochastic] Gradient Descent ===
+    # [Stochastic] Gradient Descent
     #
-    # Online SGD (batch_size = 1):
-    #   - Each sample updates the weights using its gradient.
-    #   - Weight updates: epochs * n_samples (without replacement), steps (with replacement)
+    #   Online SGD (batch_size = 1):
+    #     - Each sample updates the weights using its gradient.
+    #     - Weight updates: epochs * n_samples (without replacement), steps (with replacement)
     #
-    # Mini-batch SGD (1 < batch_size < n_samples):
-    #   - Each batch updates the weights using the gradient averaged over the batch.
-    #   - Weight updates: epochs * n_batches -> epochs * ceil(n_samples / batch_size)
+    #   Mini-batch SGD (1 < batch_size < n_samples):
+    #     - Each batch updates the weights using the gradient averaged over the batch.
+    #     - Weight updates: epochs * n_batches -> epochs * ceil(n_samples / batch_size)
     #
-    # Full-batch GD (batch_size = n_samples):
-    #   - Each epoch updates the weights using the gradient averaged over the entire dataset.
-    #   - Weight updates: epochs
+    #   Full-batch GD (batch_size = n_samples):
+    #     - Each epoch updates the weights using the gradient averaged over the entire dataset.
+    #     - Weight updates: epochs
     #
-    # Notes:
-    #   - An epoch is a full pass through the entire dataset.
-    #   - A batch is a subset of the dataset used for one step of training.
-    #   - A step consists of a forward pass, a backward pass, and a weight update,
-    #     and uses a single sample for online SGD, a batch for mini-batch SGD, and the entire dataset for full-batch GD.
+    #   Notes:
+    #     - An epoch is a full pass through the entire dataset.
+    #     - A batch is a subset of the dataset used for one step of training.
+    #     - A step consists of a forward pass, a backward pass, and a weight update, and uses
+    #       a single sample for online SGD, a batch for mini-batch SGD, and the entire dataset for full-batch GD.
 
     # In this online SGD with replacement, 100000 weight updates are performed.
     def train(self) -> None:
